@@ -1,4 +1,4 @@
-" Approximate Bayesian Computation; Model 1; Author: Samuel Winnall "
+" Approximate Bayesian Computation; Author: Samuel Winnall "
 
 " canonical chromothripsis "
 
