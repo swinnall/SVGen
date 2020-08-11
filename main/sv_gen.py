@@ -1033,35 +1033,34 @@ def analysis(count, dest, nDSB, lmbda):
     return
 
 
-############################# definitions ####################################
 
-nChroms = 22
-count   = 0
-dest    = 0
+count = 0
+def svGeneration():
 
-nodes         = []
-centromerePos = []
-
-pathList = { }
-
-chromLengths = pd.read_csv("../input/hg38.size.tsv", header=None, sep='\t')
-
-for length in range(len(chromLengths)):
-    centromerePos.append( chromLengths[1][length] / 2 )
+    # variables
+    nChroms = 22
+    dest    = 0
+    nodes   = []
+    pathList = { }
 
 
-############################ parameters ######################################
+    # import chromosome lengths
+    chromLengths = pd.read_csv("../input/hg38.size.tsv", header=None, sep='\t')
 
-mu    = 10   # DSB
 
-############################ thresholds ######################################
+    # define centromere positions
+    centromerePos = []
+    for length in range(len(chromLengths)):
+        centromerePos.append( chromLengths[1][length] / 2 )
 
-lmbda = 5    # max number of unrepaired segments a cell can handle
-delta = 1    # nCycles
 
-############################# cycles #########################################
+    # parameters
+    mu    = 10   # DSB
+    lmbda = 5    # max number of unrepaired segments a cell can handle
+    delta = 1    # nCycles
 
-def main(mu, lmbda, delta, count, dest, nodes, pathList):
+
+    # cell cycles
     for i in range(delta):
         print("\n############################ ")
 
@@ -1122,6 +1121,6 @@ def main(mu, lmbda, delta, count, dest, nodes, pathList):
     return
 
 
-if __name__ == '__main__':
+if __name__ == '__svGeneration__':
     print(" Running as standalone programme.\n")
-    main(mu, lmbda, delta, count, dest, nodes, pathList)
+    main()
