@@ -1,2 +1,12 @@
 chr1	coord1	strand1	chr2	coord2	strand2	extra	cycleID
-6	85991215	+	6	170805979	+	svtype=INV	0
+13	79217113	+	13	79217113	-	svtype=DEL	0
+21	29207046	+	21	29207046	-	svtype=DEL	0
+1	25763156	+	14	59472457	+	svtype=INS	0
+1	25763156	+	13	79217113	+	svtype=INS	0
+13	79217113	+	1	25763156	+	svtype=INS	0
+14	59472457	+	1	25763156	+	svtype=INS	0
+5	111821857	+	5	0	+	svtype=INV	0
+14	59472457	+	14	0	+	svtype=INV	0
+14	59472457	+	14	107043718	+	svtype=INV	0
+5	111821857	+	5	0	+	svtype=INV	0
+14	59472457	+	14	0	+	svtype=INV	0

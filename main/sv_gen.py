@@ -1036,10 +1036,10 @@ def analysis(nodes, count, dest, nDSB, lmbda, chromLengths):
 def main():
 
     # variables
-    nChroms = 22
-    dest    = 0
-    nodes   = []
-    pathList = { }
+    nChroms  = 22
+    dest     = 0
+    nodes    = []
+    pathList = {}
 
 
     # import chromosome lengths
@@ -1121,5 +1121,5 @@ def main():
 
 
 if __name__ == '__main__':
-    print(" Running as standalone programme.\n")
+    print(" Running as standalone program.\n")
     main()
