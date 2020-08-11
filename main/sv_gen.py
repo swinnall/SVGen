@@ -8,12 +8,15 @@
 
 " analysis - inversions: may be counted twice, not a big problem"
 
+" do i need to return nodes everytime i change a key? "
+
 ################################# imports ####################################
 
 import numpy as np
 import pandas as pd
 import random
 import csv
+import sys
 
 ################################# classes ####################################
 
@@ -272,6 +275,7 @@ def initialiseNodes(nodes,nDSB):
     # twice the number of breakpoints added (LR junctions)
     for i in range(2*nDSB):
         nodeData = {
+            # identification:
             "nodeID":   uniqueID,
             "chromID":   0,
             "haplotype": 0,
@@ -279,11 +283,11 @@ def initialiseNodes(nodes,nDSB):
             "side":      0,
             "cn":        1,
             "cnID":      1,
-
+            # connections:
             "type":        'nonTel',
             "WT":          'none',
             "M":           'none',
-            "startPath":   False,
+            # properties:
             "centromeric": False,
             "inv":         False,
         }
@@ -295,7 +299,6 @@ def initialiseNodes(nodes,nDSB):
         if nodes[i].get("cn") > 0:
             nodes[i]["type"] = 'nonTel'
             nodes[i]["WT"]   = 'none'
-            nodes[i]["startPath"] = False
             nodes[i]["centromeric"] = False
             nodes[i]["inv"] = False
 
@@ -483,83 +486,61 @@ def g1(nodes, lmbda):
 
 
 def connectedPathConstruction(nodes,pathList):
-    pTel = []
 
-    # locates all left telomeric junctions
+    # locates all p telomeric junctions and sets as start of path
+    pTel = []
     for i in range(len(nodes)):
         nodeID = nodes[i].get("nodeID")
-
         if nodes[nodeID].get("type") == 'pTel' and nodes[nodeID].get("cn") > 0:
-            nodes[nodeID]["startPath"] = True
             pTel.append(nodeID)
-        else: pass
 
 
+    # iterates along each path, checking for adjacent connections
     for i in pTel:
-        temp = []
-
-        nodeID = i
+        temp = []; nodeID = i
         temp.append(nodeID)
 
         # condition stops at another telomere
         telCondition = True
         while telCondition:
 
-            # if M = 'none': path unconnected & irrelevant
+            # check next connection (Mutant)
             if nodes[nodeID].get("M") != 'none':
-
                 nodeID = int(nodes[nodeID].get("M"))
                 temp.append(nodeID)
                 print("M Connection: %s" %nodeID)
 
-                # if WT == 'none': path ends as it is telomeric
-                if nodes[nodeID].get("WT") == 'none':
-
-                    telCondition = CheckBool.TelCheck(nodes,nodeID)
-                    # print("telCondition: %s" %telCondition)
-
-                elif nodes[nodeID].get("WT") != 'none':
+                # check next connection (Wild Type)
+                if nodes[nodeID].get("WT") != 'none':
                     nodeID = int(nodes[nodeID].get("WT"))
                     temp.append(nodeID)
                     print("WT Connection: %s" %nodeID)
-                    # continue if path continues, else: break
-                    if nodes[nodeID].get("M") != 'none':
-                        pass
 
-                        # check for cycles - might hide erroneous loops...
-                        if temp[-1] == temp[0]:
-                            break
-                        else: pass
+                # checks if segment is telomeric
+                else:
+                    telCondition = CheckBool.TelCheck(nodes,nodeID)
 
-                    else:
-                        temp.clear()
-                        break
-
+            # no mutant connection; path unconnected & irrelevant
             else:
                 temp.clear()
                 break
 
 
-         # check for repeats
+         # check for paths defined by two identical pTelomeres
         if len(temp) > 0:
             for i in range(len(pathList)):
+                # if end junction == start junction of a previous path: clear
                 if temp[-1] in pathList.get(str(i)):
-                    nodes[temp[0]]["startPath"] = False
                     temp.clear()
                     break
-                else: pass
-        else: pass
 
 
-        # append to pathList
+        # append to end of pathList
         if len(temp) > 0:
             nPaths = len(pathList)
             pathList[str(nPaths)] = temp
             print("\nConnected path: %s" %temp)
-        else: pass
 
-
-    pTel.clear()
     return pathList
 
 
@@ -571,65 +552,63 @@ def unconnectedPathConstruction(nodes):
     # locates all unconnected junctions
     for i in range(len(nodes)):
         nodeID = nodes[i].get("nodeID")
-
         if nodes[nodeID].get("M") == 'none' and nodes[nodeID].get("cn") > 0:
             unconnected.append(nodeID)
-        else: pass
-
     print("Unconnected junctions: %s" %unconnected)
+
 
     # identifies replication type for the unconnected segments
     for i in range(len(unconnected)):
-        temp = []
+        temp   = []
         nodeID = unconnected[i]
         temp.append(nodeID)
 
-        # goes through paths starting from unconnected junctions
+        # follows paths starting from unconnected junctions
         endPathCondition = True
         while endPathCondition:
 
+            # checks next connection (WT)
             if nodes[nodeID].get("WT") != 'none':
                 nodeID = int(nodes[nodeID].get("WT"))
-                print("WT Connection: %s" %nodeID)
                 temp.append(nodeID)
+                print("WT Connection: %s" %nodeID)
 
+                # checks next connection (M)
                 if nodes[nodeID].get("M") != 'none':
                     nodeID = int(nodes[nodeID].get("M"))
                     temp.append(nodeID)
+                    print("M Connection: %s" %nodeID)
+
+                # if M == 'none': path ends on non-telomere
                 else: break
 
+            # if WT == 'none': path ends on telomere
             else:
                 telCondition = CheckBool.TelCheck(nodes,nodeID)
                 if telCondition == False:
+                    temp.append(nodeID)
                     break
                 else:
                     print(nodes[nodeID])
-                    print("\nWT is empty...\n")
-                    pass
-                    break
+                    sys.exit("Error in unconnected path construction")
 
 
+        # unconnected path ends on telomere:
         if nodes[nodeID].get("type") == 'pTel' or nodes[nodeID].get("type") == 'qTel':
-            nodes[temp[0]]["startPath"] = True
             telomeric.append(temp)
 
+        # unconnected path ends on non-telomere:
         elif nodes[nodeID].get("type") == 'nonTel':
-            #print(temp)
 
-            # checks for repeats
+            # check for repeats
             for i in range(len(nonTelomeric)):
                 if temp[-1] in nonTelomeric[i]:
                     temp = []
                     break
-                else:
-                    pass
 
             if len(temp) > 0:
-                nodes[temp[0]]["startPath"] = True
                 nonTelomeric.append(temp)
-            else: pass
 
-        # temp.clear()
     print("unconnected telomeric segments:     %s" %telomeric)
     print("unconnected non-telomeric segments: %s" %nonTelomeric)
     return telomeric, nonTelomeric
@@ -661,7 +640,7 @@ def syn_g2(nodes, pathList, telomeric, nonTelomeric):
                 "type":        nodes[nodeID].get("type"),
                 "WT":          '',
                 "M":           '',
-                "startPath":   False,
+                
                 "centromeric": nodes[nodeID].get("centromeric"),
                 "inv":         False,
             })
@@ -682,7 +661,6 @@ def syn_g2(nodes, pathList, telomeric, nonTelomeric):
         if len(temp) > 0:
             nPaths = len(pathList)
             pathList[str(nPaths)] = temp
-            nodes[ temp[0] ]["startPath"] = True
         else: pass
 
         I = len(pathList)-1
@@ -737,7 +715,6 @@ def syn_g2(nodes, pathList, telomeric, nonTelomeric):
                 "type":        nodes[nodeID].get("type"),
                 "WT":          '',
                 "M":           '',
-                "startPath":   False,
                 "centromeric": nodes[nodeID].get("centromeric"),
                 "inv":         False,
             })
@@ -933,7 +910,6 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
                     "type":        'nonTel',
                     "WT":          'none',
                     "M":           'none',
-                    "startPath":   False,
                     "centromeric": False,
                     "inv":         False,
                 })
@@ -949,7 +925,6 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
                     "type":        'nonTel',
                     "WT":          'none',
                     "M":           'none',
-                    "startPath":   False,
                     "centromeric": False,
                     "inv":         False,
                 })
@@ -1107,7 +1082,6 @@ def main():
 
         else: print("Exception, no available junctions.")
         count += 1
-
         pathList.clear()
     nodes.clear()
     return

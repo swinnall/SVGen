@@ -1,6 +1,6 @@
 chr1	coord1	strand1	chr2	coord2	strand2	extra	cycleID
-17	22774125	+	17	22774125	-	svtype=DEL	0
-17	22774125	+	17	22774125	-	svtype=DEL	0
-19	49649245	+	19	0	+	svtype=INV	0
-2	193787313	+	2	242193529	+	svtype=INV	0
-19	49649245	+	19	0	+	svtype=INV	0
+18	51738043	+	18	51738043	-	svtype=DEL	0
+4	141435290	+	4	141435290	-	svtype=DEL	0
+4	141435290	+	4	141435290	-	svtype=DEL	0
+4	141435290	+	4	141435290	-	svtype=DEL	0
+4	141435290	+	4	141435290	-	svtype=DEL	0
