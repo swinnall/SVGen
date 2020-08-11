@@ -340,11 +340,8 @@ def telomericJunctions(nodes):
         if AdjacentID == np.pi and direction == 1:
             nodes[nodeID]["type"] = 'qTel'
 
-
         elif AdjacentID == np.pi and direction == 0:
             nodes[nodeID]["type"] = 'pTel'
-
-        else: pass
 
     return
 
@@ -352,16 +349,18 @@ def telomericJunctions(nodes):
 def findAdjacentJunction(nodes,nodeID):
     rightAdjNodes = []
     leftAdjNodes  = []
-    temp = []
+    temp          = []
 
-    connection.id_ = nodeID
     direction = nodes[nodeID].get("side")
     location  = nodes[nodeID].get("position")
 
+    connection.id_   = nodeID
     connection.chrom = nodes[nodeID].get("chromID")
     connection.cnid  = nodes[nodeID].get("cnID")
     connection.haplo = nodes[nodeID].get("haplotype")
 
+
+    # locates junctions along the chromosome in LR direction
     for i in range(len(nodes)):
         if nodes[i].get("chromID") == connection.chrom                    \
             and nodes[i].get("cn") > 0                                    \
@@ -377,50 +376,47 @@ def findAdjacentJunction(nodes,nodeID):
             and direction == 0 and nodes[i].get("position") < location:
                 leftAdjNodes.append(nodes[i].get("nodeID"))
 
-        else: pass
 
-
+    # sorts list of potential junctions
     if len(rightAdjNodes) > 0:
         rightAdjNodes.sort()
 
+        # only telomere available
         if len(rightAdjNodes) == 1:
             nodeID = rightAdjNodes[0]
 
+        # closest position chosen
         elif len(rightAdjNodes) > 1:
             temp.append( (rightAdjNodes[0], rightAdjNodes[1]) )
 
-            # right wild type connection: next junction is left
+
+            # right direction: next junction is left
             for i in range(len(temp)):
-                idx = temp[0][i]
-                if nodes[idx].get("side") == 0:
-                    nodeID = idx
-                else: pass
+                if nodes[ temp[0][i] ].get("side") == 0:
+                    nodeID = temp[0][i]
 
-
+    # sorts list of potential junctions
     elif len(leftAdjNodes) > 0:
         leftAdjNodes.sort(reverse = True)
 
+        # only telomere available
         if len(leftAdjNodes) == 1:
             nodeID = leftAdjNodes[0]
 
+        # closest position chosen
         elif len(leftAdjNodes) > 1:
             temp.append( (leftAdjNodes[0], leftAdjNodes[1]) )
 
-            # left wild type connection: next junction is right
+            # left direction: next junction is right
             for i in range(len(temp)):
-                idx = temp[0][i]
-                if nodes[idx].get("side") == 1:
-                    nodeID = idx
-                else: pass
+                if nodes[ temp[0][i] ].get("side") == 1:
+                    nodeID = temp[0][i]
 
 
-    # telomeric junctions return pi
+    # no adjacent junctions means segment is telomeric, return pi
     elif len(leftAdjNodes) == 0 and len(rightAdjNodes) == 0:
         nodeID = np.pi
 
-    rightAdjNodes.clear()
-    leftAdjNodes.clear()
-    temp.clear()
     return nodeID
 
 
@@ -435,9 +431,6 @@ def generateWT(nodes):
             nodes[nodeID]["WT"] = str(adjID)
             nodes[adjID]["WT"]  = str(nodeID)
 
-        elif nodes[nodeID].get("type") != 'nonTel' and nodes[nodeID].get("cn") > 0:
-            nodes[nodeID]["WT"] = 'none'
-
     return
 
 
@@ -447,38 +440,29 @@ def g1(nodes, lmbda):
     for i in range(len(nodes)):
         if nodes[i].get("cn") > 0 and nodes[i].get("M") == 'none':
             l.append(nodes[i].get("nodeID"))
-        else:
-            pass
 
 
+    # repairs breaks until endCondition is met
     endCondition = True
     while endCondition == True:
 
-        ## Start at Random Breakpoint
-        startChoice = True
-        while startChoice:
-            startNode = int(np.random.choice(l, 1))
+        ## start at random junction
+        startNode = int(np.random.choice(l, 1))
 
-            if nodes[startNode].get("M") == 'none' and nodes[startNode].get("cn") > 0:
-                startChoice = False
-            else: pass
-
-
+        # join random junction
         joinChoice = True
         while joinChoice:
+
             joinNode = int(np.random.choice(l, 1))
 
-            if nodes[joinNode].get("M") == 'none' and joinNode != startNode and nodes[joinNode].get("cn") > 0:
+            if joinNode != startNode:
                 joinChoice = False
-            else: pass
-
 
         nodes[startNode]["M"] = str(joinNode)
         nodes[joinNode]["M"]  = str(startNode)
 
-        print("start J: %s" %startNode)
+        print("start J:  %s" %startNode)
         print("joined J: %s" %joinNode)
-
 
         endCondition = CheckBool.endGrowth(nodes, lmbda)
 
@@ -509,12 +493,14 @@ def connectedPathConstruction(nodes,pathList):
                 nodeID = int(nodes[nodeID].get("M"))
                 temp.append(nodeID)
                 print("M Connection: %s" %nodeID)
+                print(nodes[nodeID])
 
                 # check next connection (Wild Type)
                 if nodes[nodeID].get("WT") != 'none':
                     nodeID = int(nodes[nodeID].get("WT"))
                     temp.append(nodeID)
                     print("WT Connection: %s" %nodeID)
+                    print(nodes[nodeID])
 
                 # checks if segment is telomeric
                 else:
@@ -572,12 +558,14 @@ def unconnectedPathConstruction(nodes):
                 nodeID = int(nodes[nodeID].get("WT"))
                 temp.append(nodeID)
                 print("WT Connection: %s" %nodeID)
+                print(nodes[nodeID])
 
                 # checks next connection (M)
                 if nodes[nodeID].get("M") != 'none':
                     nodeID = int(nodes[nodeID].get("M"))
                     temp.append(nodeID)
                     print("M Connection: %s" %nodeID)
+                    print(nodes[nodeID])
 
                 # if M == 'none': path ends on non-telomere
                 else: break
@@ -640,7 +628,7 @@ def syn_g2(nodes, pathList, telomeric, nonTelomeric):
                 "type":        nodes[nodeID].get("type"),
                 "WT":          '',
                 "M":           '',
-                
+
                 "centromeric": nodes[nodeID].get("centromeric"),
                 "inv":         False,
             })
@@ -710,7 +698,7 @@ def syn_g2(nodes, pathList, telomeric, nonTelomeric):
                 "position":  nodes[nodeID].get("position"),
                 "side":      nodes[nodeID].get("side"),
                 "cn":        nodes[nodeID].get("cn"),
-                "cnID":      nodes[nodeID].get("cn"),#nodes[nodeID].get("cnID") + 1, # what if segment 1/3 is being connected... needs to be 4 but currently would be 2..
+                "cnID":      nodes[nodeID].get("cn"),
 
                 "type":        nodes[nodeID].get("type"),
                 "WT":          '',
