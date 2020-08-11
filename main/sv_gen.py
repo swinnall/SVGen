@@ -842,7 +842,7 @@ def generateCentromeres(nodes, centromerePos):
     return
 
 
-def cmplxSegregation(nodes, pathList, i, nCent, centList):
+def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
 
             # nCent - 1 number of breakpoints
             for j in range(nCent-1):
@@ -959,7 +959,7 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList):
 
 
 
-def mitosis(nodes, pathList, count, delta):
+def mitosis(nodes, pathList, count, delta, centromerePos):
 
     for i in range(len(pathList)):
         daughterCell = int(random.randint(0,1))
@@ -985,7 +985,7 @@ def mitosis(nodes, pathList, count, delta):
         elif nCent > 1:
 
             if count < delta-1:
-                cmplxSegregation(i, nCent, centList)
+                cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos)
             elif count == delta-1:
 
                 for j in range(len(pathList.get(str(i)))):
@@ -1005,7 +1005,7 @@ def analysis(nodes, count, dest, mu, lmbda, delta, chromLengths):
 
         with open('../output/0' +  str(dest) + '/parameters.tsv', 'w', newline='') as file:
             writer = csv.writer(file, delimiter = '\t')
-            writer.writerow(["nDSB", "max unrepaired", "cycleID"])
+            writer.writerow(["mu", "lmbda", "delta"])
             writer.writerow([mu, lmbda, delta])
 
         with open('../output/0' +  str(dest) + '/sv_data.tsv', 'w', newline='') as file:
@@ -1098,7 +1098,7 @@ def main():
 
 
             # mitosis phase
-            mitosis(nodes, pathList, count, delta)
+            mitosis(nodes, pathList, count, delta, centromerePos)
 
 
             # open output file for writing SV data

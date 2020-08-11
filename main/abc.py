@@ -61,9 +61,9 @@ def readCN():
     # read SVGen parameter info
     r_par_TSV = '../output/00' + '/parameters.tsv'
     par_df = pd.read_csv(r_par_TSV, sep="\t")
-    mu    = par_df.iat[i,0]
-    lmbda = par_df.iat[i,1]
-    delta = par_df.iat[i,2]
+    mu    = par_df.iat[0,0]
+    lmbda = par_df.iat[0,1]
+    delta = par_df.iat[0,2]
 
 
     return cnInfo, mu, lmbda, delta
@@ -87,10 +87,11 @@ def genDist(cnInfo):
 
         # determine number of oscillating cn segments
         nOscSeg = 0
-        for j in range(0,len(cnInfo[i])-1,1)
+        if len(cnInfo[i]) > 0:
+            for j in range(0,len(cnInfo[i])-1,1):
 
-            if cnInfo[i][j][3] != cnInfo[i][j+1][3]
-                nOscSeg += 1
+                if cnInfo[i][j][2] != cnInfo[i][j+1][2]:
+                    nOscSeg += 1
         sumStat[i].append(nOscSeg)
 
 
@@ -133,6 +134,7 @@ def main():
         # append simulation info to memory
         mem.append( (d, mu, lmbda, delta) )
 
+    print(mem)
     return
 
 
