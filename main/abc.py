@@ -1,4 +1,4 @@
-" Approximate Bayesian Computation; Author: Samuel Winnall "
+" Approximate Bayesian Computation Analysis; Author: Samuel Winnall "
 
 ################################# Overview ###################################
 
@@ -8,7 +8,7 @@
 
 # 3. calculate distance from summary statistics/criteria
 
-# 4. store distance and parameters
+# 4. store distance and parameters in memory
 
 # 5. [ insert new parameters into original model script ]
 
