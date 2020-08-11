@@ -420,8 +420,9 @@ def findAdjacentJunction(nodes,nodeID):
     return nodeID
 
 
-def generateWT(nodes):
+def g1(nodes, lmbda):
 
+    # generate WT connections
     for i in range(len(nodes)):
         nodeID = nodes[i].get("nodeID")
 
@@ -431,11 +432,8 @@ def generateWT(nodes):
             nodes[nodeID]["WT"] = str(adjID)
             nodes[adjID]["WT"]  = str(nodeID)
 
-    return
 
-
-def g1(nodes, lmbda):
-
+    # list available mutant connections
     l = []
     for i in range(len(nodes)):
         if nodes[i].get("cn") > 0 and nodes[i].get("M") == 'none':
@@ -921,7 +919,6 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
             return
 
 
-
 def mitosis(nodes, pathList, count, delta, centromerePos):
 
     for i in range(len(pathList)):
@@ -1011,7 +1008,7 @@ def main():
     # parameters
     mu    = 10   # DSB
     lmbda = 5    # max number of unrepaired segments a cell can handle
-    delta = 1    # nCycles
+    delta = 2    # nCycles
 
 
     # cell cycles
@@ -1040,8 +1037,8 @@ def main():
         if nDSB > 0:
 
             # growth phase
-            generateWT(nodes)
             g1(nodes, lmbda)
+
 
             # path construction
             pathList = connectedPathConstruction(nodes, pathList)
