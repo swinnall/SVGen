@@ -4,9 +4,9 @@
 
 # 1. run breakpoint_model
 
-# 2. check summary stats against chromothripsis criteria
+# 2. read and sort cn information
 
-# 3. calculate distance from summary statistics
+# 3. calculate distance from summary statistics/criteria
 
 # 4. store distance and parameters
 
@@ -36,14 +36,13 @@ def copy(src, dest):
 def readCN():
 
     # read SVGen copy number info
-    r_cn_TSV = '../output/0' + str(dest) + '/cn_data.tsv'
+    r_cn_TSV = '../output/00' + '/cn_data.tsv'
     cn_df = pd.read_csv(r_cn_TSV, sep="\t")
-    print(cn_df)
 
 
     # define list of chromosomes
     nChrom    = 22
-    cnChanges = [ [] for i in range(nChrom)]
+    cnInfo = [ [] for i in range(nChrom)]
 
 
     # store cn tuple info for each chromosome
@@ -51,23 +50,66 @@ def readCN():
         # 0: chromID
         chromID = cn_df.iat[i,0]
         # 1: startPos; 2: endPos; 3: CN
-        cnChanges[chromID-1].append(  (cn_df.iat[i,1], cn_df.iat[i,2], cn_df.iat[i,3])  ) # -1 for index
+        cnInfo[chromID-1].append(  (cn_df.iat[i,1], cn_df.iat[i,2], cn_df.iat[i,3])  ) # -1 for index
 
 
-    # studies each chromosome's cn info
-    test = []
-    condition = 5
+    # sort cnInfo tuples by start position for each chromosome
     for i in range(nChrom):
-        # if 10 breakpoints on a given chromosome then simulation passes
-        if len( cnChanges[i] ) >= condition:
-            test.append(True)
-        else: test.append(False)
+        cnInfo[i].sort(key=lambda x:x[1])
 
-    return
+
+    # read SVGen parameter info
+    r_par_TSV = '../output/00' + '/parameters.tsv'
+    par_df = pd.read_csv(r_par_TSV, sep="\t")
+    mu    = par_df.iat[i,0]
+    lmbda = par_df.iat[i,1]
+    delta = par_df.iat[i,2]
+
+
+    return cnInfo, mu, lmbda, delta
+
+
+
+def genDist(cnInfo):
+
+    ## Generate Summary Statistics ##
+    nChrom  = 22
+    sumStat = [ [] for i in range(nChrom)]
+
+
+    # analyse each chromosome
+    for i in range(nChrom):
+
+        # determine number of breakpoints
+        nbp = len(cnInfo[i])
+        sumStat[i].append(nbp)
+
+
+        # determine number of oscillating cn segments
+        nOscSeg = 0
+        for j in range(0,len(cnInfo[i])-1,1)
+
+            if cnInfo[i][j][3] != cnInfo[i][j+1][3]
+                nOscSeg += 1
+        sumStat[i].append(nOscSeg)
+
+
+    ## Generate Distance ##
+    nOscCrit = 10
+    nbpCrit  = 10
+
+    d = 1
+
+
+    return d
 
 
 
 def main():
+
+    # define memory matrix
+    mem = []
+
 
     # ensure output file exists
     src  = '../input/00'
@@ -83,7 +125,13 @@ def main():
         sv_gen.main()
 
         # read copy number info
-        readCN()
+        cnInfo, mu, lmbda, delta = readCN()
+
+        # generate distance to SS
+        d = genDist(cnInfo)
+
+        # append simulation info to memory
+        mem.append( (d, mu, lmbda, delta) )
 
     return
 

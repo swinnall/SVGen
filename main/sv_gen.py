@@ -999,14 +999,14 @@ def mitosis(nodes, pathList, count, delta):
     return
 
 
-def analysis(nodes, count, dest, nDSB, lmbda, chromLengths):
+def analysis(nodes, count, dest, mu, lmbda, delta, chromLengths):
 
     if count == 0:
 
         with open('../output/0' +  str(dest) + '/parameters.tsv', 'w', newline='') as file:
             writer = csv.writer(file, delimiter = '\t')
             writer.writerow(["nDSB", "max unrepaired", "cycleID"])
-            writer.writerow([nDSB, lmbda, count])
+            writer.writerow([mu, lmbda, delta])
 
         with open('../output/0' +  str(dest) + '/sv_data.tsv', 'w', newline='') as file:
             writer = csv.writer(file, delimiter = '\t')
@@ -1015,13 +1015,6 @@ def analysis(nodes, count, dest, nDSB, lmbda, chromLengths):
         with open('../output/0' +  str(dest) + '/cn_data.tsv', 'w', newline='') as file:
             writer = csv.writer(file, delimiter = '\t')
             writer.writerow(["chr", "start", "end", "cn", "haplotype", "cycleID"])
-
-    elif count > 0:
-
-        with open('../output/0' +  str(dest) + '/parameters.tsv', 'a', newline='') as file:
-            writer = csv.writer(file, delimiter = '\t')
-            writer.writerow([nDSB, lmbda, count])
-
 
     # analyse data for SVs
     calcSVs.deletions(nodes,count,dest)
@@ -1109,7 +1102,7 @@ def main():
 
 
             # open output file for writing SV data
-            analysis(nodes, count, dest, nDSB, lmbda, chromLengths)
+            analysis(nodes, count, dest, mu, lmbda, delta, chromLengths)
 
 
         else: print("Exception, no available junctions.")
@@ -1121,5 +1114,5 @@ def main():
 
 
 if __name__ == '__main__':
-    print(" Running as standalone program.\n")
+    print(" Running SVGen.\n")
     main()
