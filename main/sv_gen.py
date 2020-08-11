@@ -57,7 +57,7 @@ class cirosPlot():
         self.hap
         self.cycleID
 
-    def deletions(self, count, dest):
+    def deletions(self, nodes, count, dest):
         for i in range(len(nodes)):
             if nodes[i].get("cn") == 0:
                 chr1     = nodes[i].get("chromID")
@@ -75,7 +75,7 @@ class cirosPlot():
                     writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2,	extra, cycleID])
         return
 
-    def insertions(self, count, dest):
+    def insertions(self, nodes, count, dest):
         for i in range(len(nodes)):
 
             if nodes[i].get("cn") > 0 and nodes[i].get("M") != 'none' and \
@@ -97,7 +97,7 @@ class cirosPlot():
 
             else: pass
 
-    def inversions(self, count, dest):
+    def inversions(self, nodes, count, dest, chromLengths):
         for i in range(len(nodes)):
 
             if nodes[i].get("cn") > 0 and nodes[i].get("inv") == True:
@@ -141,7 +141,7 @@ class cirosPlot():
                     writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2,	extra, cycleID])
         return
 
-    def duplications(self, count, dest):
+    def duplications(self, nodes, count, dest, chromLengths):
         coveredNodes = []
         for i in range(len(nodes)):
             nodeID = nodes[i].get("nodeID")
@@ -207,7 +207,7 @@ class CheckBool():
     def __init__(self):
         return
 
-    def endGrowth():
+    def endGrowth(nodes, lmbda):
         tally = 0
         for i in range(len(nodes)):
 
@@ -225,7 +225,7 @@ class CheckBool():
 
         return endCondition
 
-    def TelCheck(nodeID):
+    def TelCheck(nodes,nodeID):
         telCondition = True
 
         if nodes[nodeID].get("type") == 'qTel' or nodes[nodeID].get("type") == 'pTel':
@@ -236,7 +236,7 @@ class CheckBool():
 
         return telCondition
 
-    def checkCentromere(i):
+    def checkCentromere(nodes,pathList,i):
 
         tally = 0
         centList = []
@@ -265,7 +265,7 @@ def generateDSBs(mu):
     return nDSB
 
 
-def initialiseNodes(nDSB):
+def initialiseNodes(nodes,nDSB):
     uniqueID = len(nodes)
     batchIDX = len(nodes)
 
@@ -302,7 +302,7 @@ def initialiseNodes(nDSB):
     return nodes, batchIDX
 
 
-def breakpointPos(batchIDX):
+def breakpointPos(nodes,batchIDX,nChroms,chromLengths):
 
     hapChoice = [0,1]
     for i in range(batchIDX,len(nodes),2):
@@ -327,12 +327,12 @@ def breakpointPos(batchIDX):
     return
 
 
-def telomericJunctions():
+def telomericJunctions(nodes):
     for i in range(0,len(nodes),1):
         nodeID = nodes[i].get("nodeID")
 
         direction = nodes[nodeID].get("side")
-        AdjacentID = findAdjacentJunction(nodeID)
+        AdjacentID = findAdjacentJunction(nodes,nodeID)
 
         if AdjacentID == np.pi and direction == 1:
             nodes[nodeID]["type"] = 'qTel'
@@ -346,7 +346,7 @@ def telomericJunctions():
     return
 
 
-def findAdjacentJunction(nodeID):
+def findAdjacentJunction(nodes,nodeID):
     rightAdjNodes = []
     leftAdjNodes  = []
     temp = []
@@ -421,13 +421,13 @@ def findAdjacentJunction(nodeID):
     return nodeID
 
 
-def generateWT():
+def generateWT(nodes):
 
     for i in range(len(nodes)):
         nodeID = nodes[i].get("nodeID")
 
         if nodes[nodeID].get("type") == "nonTel" and nodes[nodeID].get("cn") > 0:
-            adjID = findAdjacentJunction(nodeID)
+            adjID = findAdjacentJunction(nodes,nodeID)
 
             nodes[nodeID]["WT"] = str(adjID)
             nodes[adjID]["WT"]  = str(nodeID)
@@ -438,7 +438,7 @@ def generateWT():
     return
 
 
-def g1():
+def g1(nodes, lmbda):
 
     l = []
     for i in range(len(nodes)):
@@ -477,12 +477,12 @@ def g1():
         print("joined J: %s" %joinNode)
 
 
-        endCondition = CheckBool.endGrowth()
+        endCondition = CheckBool.endGrowth(nodes, lmbda)
 
     return
 
 
-def connectedPathConstruction():
+def connectedPathConstruction(nodes,pathList):
     pTel = []
 
     # locates all left telomeric junctions
@@ -515,7 +515,7 @@ def connectedPathConstruction():
                 # if WT == 'none': path ends as it is telomeric
                 if nodes[nodeID].get("WT") == 'none':
 
-                    telCondition = CheckBool.TelCheck(nodeID)
+                    telCondition = CheckBool.TelCheck(nodes,nodeID)
                     # print("telCondition: %s" %telCondition)
 
                 elif nodes[nodeID].get("WT") != 'none':
@@ -563,7 +563,7 @@ def connectedPathConstruction():
     return pathList
 
 
-def unconnectedPathConstruction():
+def unconnectedPathConstruction(nodes):
     unconnected  = []
     telomeric    = []
     nonTelomeric = []
@@ -599,7 +599,7 @@ def unconnectedPathConstruction():
                 else: break
 
             else:
-                telCondition = CheckBool.TelCheck(nodeID)
+                telCondition = CheckBool.TelCheck(nodes,nodeID)
                 if telCondition == False:
                     break
                 else:
@@ -635,7 +635,7 @@ def unconnectedPathConstruction():
     return telomeric, nonTelomeric
 
 
-def syn_g2(telomeric, nonTelomeric):
+def syn_g2(nodes, pathList, telomeric, nonTelomeric):
     telomericCopied    = [[] for i in range(len(telomeric))]
     nonTelomericCopied = [[] for i in range(len(nonTelomeric))]
 
@@ -716,7 +716,6 @@ def syn_g2(telomeric, nonTelomeric):
 
             nodes[ pathList.get(str(I))[ len(pathList.get(str(I)))-1 ] ]["WT"]  = 'none'
 
-    ###################################################################################################################
 
     uniqueID = len(nodes)
     for i in range(len(nonTelomeric)):
@@ -786,7 +785,7 @@ def syn_g2(telomeric, nonTelomeric):
     return nodes, pathList
 
 
-def checkInv():
+def checkInv(nodes, pathList):
 
     for i in range(len(pathList)):
         for j in range(len(pathList.get(str(i)))):
@@ -799,7 +798,7 @@ def checkInv():
     return
 
 
-def generateCentromeres():
+def generateCentromeres(nodes, centromerePos):
 
     for i in range(len(nodes)):
         nodeID = nodes[i].get("nodeID")
@@ -843,7 +842,7 @@ def generateCentromeres():
     return
 
 
-def cmplxSegregation(i, nCent, centList):
+def cmplxSegregation(nodes, pathList, i, nCent, centList):
 
             # nCent - 1 number of breakpoints
             for j in range(nCent-1):
@@ -960,12 +959,12 @@ def cmplxSegregation(i, nCent, centList):
 
 
 
-def mitosis(count):
+def mitosis(nodes, pathList, count, delta):
 
     for i in range(len(pathList)):
         daughterCell = int(random.randint(0,1))
 
-        nCent, centList = CheckBool.checkCentromere(i)
+        nCent, centList = CheckBool.checkCentromere(nodes, pathList, i)
 
         # stochastic assignment
         if nCent == 0:
@@ -1000,7 +999,7 @@ def mitosis(count):
     return
 
 
-def analysis(count, dest, nDSB, lmbda):
+def analysis(nodes, count, dest, nDSB, lmbda, chromLengths):
 
     if count == 0:
 
@@ -1025,17 +1024,16 @@ def analysis(count, dest, nDSB, lmbda):
 
 
     # analyse data for SVs
-    calcSVs.deletions(count,dest)
-    calcSVs.insertions(count,dest)
-    calcSVs.inversions(count,dest)
-    calcSVs.duplications(count,dest)
+    calcSVs.deletions(nodes,count,dest)
+    calcSVs.insertions(nodes,count,dest)
+    calcSVs.inversions(nodes,count,dest,chromLengths)
+    calcSVs.duplications(nodes,count,dest,chromLengths)
 
     return
 
 
-
-count = 0
-def svGeneration():
+# generate SV:
+def main():
 
     # variables
     nChroms = 22
@@ -1061,6 +1059,7 @@ def svGeneration():
 
 
     # cell cycles
+    count = 0
     for i in range(delta):
         print("\n############################ ")
 
@@ -1070,57 +1069,57 @@ def svGeneration():
 
 
         # initialises nodes dictionary
-        nodes, batchIDX = initialiseNodes(nDSB)
+        nodes, batchIDX = initialiseNodes(nodes,nDSB)
         print("Total number of junctions in nucleus: %d\n" %len(nodes))
 
 
         # assign breakpoint genetic positions
-        breakpointPos(batchIDX)
+        breakpointPos(nodes, batchIDX, nChroms, chromLengths)
 
 
         # define path ends
-        telomericJunctions()
+        telomericJunctions(nodes)
 
 
         if nDSB > 0:
 
             # growth phase
-            generateWT()
-            g1()
+            generateWT(nodes)
+            g1(nodes, lmbda)
 
             # path construction
-            pathList = connectedPathConstruction()
-            telomeric, nonTelomeric = unconnectedPathConstruction()
+            pathList = connectedPathConstruction(nodes, pathList)
+            telomeric, nonTelomeric = unconnectedPathConstruction(nodes)
 
 
             # synthesis & second growth phase
-            nodes, pathList = syn_g2(telomeric, nonTelomeric)
+            nodes, pathList = syn_g2(nodes, pathList, telomeric, nonTelomeric)
 
 
             # path directionality
-            checkInv()
+            checkInv(nodes, pathList)
 
 
             # assign centromeres to segments
-            generateCentromeres()
+            generateCentromeres(nodes, centromerePos)
 
 
             # mitosis phase
-            mitosis(count)
+            mitosis(nodes, pathList, count, delta)
 
 
             # open output file for writing SV data
-            analysis(count, dest, nDSB, lmbda)
+            analysis(nodes, count, dest, nDSB, lmbda, chromLengths)
+
 
         else: print("Exception, no available junctions.")
-
-        pathList.clear()
         count += 1
 
+        pathList.clear()
     nodes.clear()
     return
 
 
-if __name__ == '__svGeneration__':
+if __name__ == '__main__':
     print(" Running as standalone programme.\n")
     main()
