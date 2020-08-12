@@ -359,6 +359,7 @@ def findAdjacentJunction(nodes,nodeID):
     connection.cnid  = nodes[nodeID].get("cnID")
     connection.haplo = nodes[nodeID].get("haplotype")
 
+    print("")
     print(connection.id_, location, nodes[nodeID].get("type"), direction, connection.chrom)
 
 
@@ -369,50 +370,52 @@ def findAdjacentJunction(nodes,nodeID):
             and nodes[i].get("cnID") == connection.cnid                   \
             and nodes[i].get("haplotype") == connection.haplo             \
             and direction == 1 and nodes[i].get("position") > location:
-                rightAdjNodes.append(nodes[i].get("nodeID"))
+                rightAdjNodes.append(nodes[i])
 
         elif nodes[i].get("chromID") == connection.chrom                  \
             and nodes[i].get("cn") > 0                                    \
             and nodes[i].get("cnID") == connection.cnid                   \
             and nodes[i].get("haplotype") == connection.haplo             \
             and direction == 0 and nodes[i].get("position") < location:
-                leftAdjNodes.append(nodes[i].get("nodeID"))
+                leftAdjNodes.append(nodes[i])
 
 
     # sorts list of potential junctions
     if len(rightAdjNodes) > 0:
-        rightAdjNodes.sort()
+        rightAdjNodes.sort(key = lambda x:x['position'])
+        print("RADJnodes: %s" %rightAdjNodes)
 
         # only telomere available
         if len(rightAdjNodes) == 1:
-            nodeID = rightAdjNodes[0]
+            nodeID = rightAdjNodes[0].get("nodeID")
 
         # closest position chosen
         elif len(rightAdjNodes) > 1:
-            temp.append( (rightAdjNodes[0], rightAdjNodes[1]) )
-
+            for i in range(len(rightAdjNodes)):
 
             # right direction: next junction is left
-            for i in range(len(temp)):
-                if nodes[ temp[0][i] ].get("side") == 0:
-                    nodeID = temp[0][i]
+                if rightAdjNodes[i].get("side") == 0:
+                    nodeID = rightAdjNodes[i].get("nodeID")
+                    break # stops at first case
+
 
     # sorts list of potential junctions
     elif len(leftAdjNodes) > 0:
-        leftAdjNodes.sort(reverse = True)
+        leftAdjNodes.sort(key = lambda x:x['position'], reverse = True)
+        print("lADJnodes: %s" %leftAdjNodes)
 
         # only telomere available
         if len(leftAdjNodes) == 1:
-            nodeID = leftAdjNodes[0]
+            nodeID = leftAdjNodes[0].get("nodeID")
 
         # closest position chosen
         elif len(leftAdjNodes) > 1:
-            temp.append( (leftAdjNodes[0], leftAdjNodes[1]) )
+            for i in range(len(leftAdjNodes)):
 
-            # left direction: next junction is right
-            for i in range(len(temp)):
-                if nodes[ temp[0][i] ].get("side") == 1:
-                    nodeID = temp[0][i]
+            # right direction: next junction is right
+                if leftAdjNodes[i].get("side") == 1:
+                    nodeID = leftAdjNodes[i].get("nodeID")
+                    break # stops at first case
 
 
     # no adjacent junctions means segment is telomeric, return pi
