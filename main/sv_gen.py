@@ -359,6 +359,8 @@ def findAdjacentJunction(nodes,nodeID):
     connection.cnid  = nodes[nodeID].get("cnID")
     connection.haplo = nodes[nodeID].get("haplotype")
 
+    print(connection.id_, location, nodes[nodeID].get("type"), direction, connection.chrom)
+
 
     # locates junctions along the chromosome in LR direction
     for i in range(len(nodes)):
@@ -422,22 +424,45 @@ def findAdjacentJunction(nodes,nodeID):
 
 def g1(nodes, lmbda):
 
-    # generate WT connections
+    # list available wild type connections
+    lWT = []
     for i in range(len(nodes)):
-        nodeID = nodes[i].get("nodeID")
+        if nodes[i].get("cn") > 0 and nodes[i].get("WT") == 'none' and nodes[i].get("type") == 'nonTel' :
+            lWT.append(nodes[i].get("nodeID"))
 
-        if nodes[nodeID].get("type") == "nonTel" and nodes[nodeID].get("cn") > 0:
-            adjID = findAdjacentJunction(nodes,nodeID)
 
-            nodes[nodeID]["WT"] = str(adjID)
-            nodes[adjID]["WT"]  = str(nodeID)
+    # check lWT has elements
+    if len(lWT) > 0:
+        WTcondition = True
+    else: WTcondition = False
+
+
+    # generate WT connections
+    while WTcondition:
+
+        nodeID = int(np.random.choice(lWT, 1))
+        adjID = findAdjacentJunction(nodes,nodeID)
+        print(nodes[adjID].get("nodeID"), nodes[adjID].get("position"), nodes[adjID].get("type"), nodes[adjID].get("side"), nodes[adjID].get("chromID"))
+
+        nodes[nodeID]["WT"] = str(adjID)
+        nodes[adjID]["WT"]  = str(nodeID)
+
+        print("start J:  %s" %nodeID)
+        print("WT J:     %s" %adjID)
+
+        lWT.remove(nodeID)
+        lWT.remove(adjID)
+
+        if len(lWT) > 0:
+            WTcondition = True
+        else: WTcondition = False
 
 
     # list available mutant connections
-    l = []
+    lM = []
     for i in range(len(nodes)):
         if nodes[i].get("cn") > 0 and nodes[i].get("M") == 'none':
-            l.append(nodes[i].get("nodeID"))
+            lM.append(nodes[i].get("nodeID"))
 
 
     # repairs breaks until endCondition is met
@@ -445,15 +470,17 @@ def g1(nodes, lmbda):
     while endCondition == True:
 
         ## start at random junction
-        startNode = int(np.random.choice(l, 1))
+        startNode = int(np.random.choice(lM, 1))
 
         # join random junction
         joinChoice = True
         while joinChoice:
 
-            joinNode = int(np.random.choice(l, 1))
+            joinNode = int(np.random.choice(lM, 1))
 
             if joinNode != startNode:
+                lM.remove(startNode)
+                lM.remove(joinNode)
                 joinChoice = False
 
         nodes[startNode]["M"] = str(joinNode)
@@ -490,15 +517,33 @@ def connectedPathConstruction(nodes,pathList):
             if nodes[nodeID].get("M") != 'none':
                 nodeID = int(nodes[nodeID].get("M"))
                 temp.append(nodeID)
-                print("M Connection: %s" %nodeID)
-                print(nodes[nodeID])
+                #print("M Connection: %s" %nodeID)
+                #print(nodes[nodeID])
+
+
+                # debugging
+                if nodes[nodeID].get("M") != 'none':
+                    print(nodes[int(nodes[nodeID].get("M"))])
+                if nodes[nodeID].get("WT") != 'none':
+                    print(nodes[int(nodes[nodeID].get("WT"))])
+
 
                 # check next connection (Wild Type)
                 if nodes[nodeID].get("WT") != 'none':
+                    print(nodes[int(nodes[nodeID].get("WT"))])
+
                     nodeID = int(nodes[nodeID].get("WT"))
                     temp.append(nodeID)
-                    print("WT Connection: %s" %nodeID)
-                    print(nodes[nodeID])
+                    #print("WT Connection: %s" %nodeID)
+                    #print(nodes[nodeID])
+
+
+                    # debugging
+                    if nodes[nodeID].get("M") != 'none':
+                        print(nodes[int(nodes[nodeID].get("M"))])
+                    if nodes[nodeID].get("WT") != 'none':
+                        print(nodes[int(nodes[nodeID].get("WT"))])
+
 
                 # checks if segment is telomeric
                 else:
@@ -572,7 +617,6 @@ def unconnectedPathConstruction(nodes):
             else:
                 telCondition = CheckBool.TelCheck(nodes,nodeID)
                 if telCondition == False:
-                    temp.append(nodeID)
                     break
                 else:
                     print(nodes[nodeID])
@@ -1008,7 +1052,7 @@ def main():
     # parameters
     mu    = 10   # DSB
     lmbda = 5    # max number of unrepaired segments a cell can handle
-    delta = 2    # nCycles
+    delta = 1    # nCycles
 
 
     # cell cycles
