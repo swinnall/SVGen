@@ -153,7 +153,7 @@ class cirosPlot():
             coveredNodes.append(nodeID)
 
             if nodes[i].get("type") == 'nonTel' and nodes[i].get("M") != 'none':
-                #print(nodes[i])
+                print(nodes[i])
                 AdjacentID = nodes[ int(nodes[i].get("WT")) ].get("nodeID")
 
                 if AdjacentID not in coveredNodes:
@@ -366,21 +366,18 @@ def findAdjacentJunction(nodes,nodeID):
     print(connection.id_, location, nodes[nodeID].get("type"), direction, connection.chrom, connection.cnid, connection.haplo)
     print(nodes[nodeID])
 
-
+# and nodes[i].get("cn") > 0                                    \
+# and nodes[i].get("cn") == connection.cn                       \
     # locates junctions along the chromosome in LR direction
     for i in range(len(nodes)):
         if nodes[i].get("chromID") == connection.chrom                    \
-            and nodes[i].get("cn") > 0                                    \
-            and nodes[i].get("cn") == connection.cnid                     \
-            and nodes[i].get("cnID") == connection.cn                     \
+            and nodes[i].get("cnID") == connection.cnid                     \
             and nodes[i].get("haplotype") == connection.haplo             \
             and direction == 1 and nodes[i].get("position") > location:
                 rightAdjNodes.append(nodes[i])
 
         elif nodes[i].get("chromID") == connection.chrom                  \
-            and nodes[i].get("cn") > 0                                    \
             and nodes[i].get("cnID") == connection.cnid                   \
-            and nodes[i].get("cnID") == connection.cn                     \
             and nodes[i].get("haplotype") == connection.haplo             \
             and direction == 0 and nodes[i].get("position") < location:
                 leftAdjNodes.append(nodes[i])
@@ -428,6 +425,11 @@ def findAdjacentJunction(nodes,nodeID):
     elif len(leftAdjNodes) == 0 and len(rightAdjNodes) == 0:
         nodeID = np.pi
 
+
+    # check chromosome region exists, if not: delete junction
+    if nodeID != np.pi and nodes[nodeID].get("cn") == 0:
+        nodes[connection.id_]["cn"] = 0
+
     return nodeID
 
 
@@ -436,7 +438,7 @@ def g1(nodes, lmbda):
     # list available wild type connections
     lWT = []
     for i in range(len(nodes)):
-        if nodes[i].get("cn") > 0 and nodes[i].get("WT") == 'none' and nodes[i].get("type") == 'nonTel' :
+        if nodes[i].get("cn") > 0 and nodes[i].get("WT") == 'none' and nodes[i].get("type") == 'nonTel' : # 
             lWT.append(nodes[i].get("nodeID"))
 
 
@@ -510,6 +512,50 @@ def g1(nodes, lmbda):
         print("joined J: %s" %joinNode)
 
         endCondition = CheckBool.endGrowth(nodes, lmbda)
+
+    return nodes
+
+
+def generateCentromeres(nodes, centromerePos):
+
+    for i in range(len(nodes)):
+        nodeID = nodes[i].get("nodeID")
+
+        # check non telomeric segments
+        if nodes[nodeID].get("type") == 'nonTel' and nodes[nodeID].get("cn") > 0:
+            #print(nodeID)
+            connID = int(nodes[nodeID].get("WT"))
+            chromosome = nodes[nodeID].get("chromID")-1 # for index
+
+            # left direction
+            if nodes[nodeID].get("side") == 0 and centromerePos[chromosome] < nodes[nodeID].get("position") \
+                and centromerePos[chromosome] > nodes[connID].get("position"):
+
+                    nodes[nodeID]["centromeric"] = True
+                    nodes[connID]["centromeric"] = True
+
+            # right direction
+            elif nodes[nodeID].get("side") == 1 and centromerePos[chromosome] > nodes[nodeID].get("position") \
+                and centromerePos[chromosome] < nodes[connID].get("position"):
+
+                    nodes[nodeID]["centromeric"] = True
+                    nodes[connID]["centromeric"] = True
+            else: pass
+
+        # check telomeric segments
+        elif nodes[nodeID].get("type") != 'nonTel' and nodes[nodeID].get("cn") > 0:
+            chromosome = nodes[nodeID].get("chromID")-1 # for index
+
+            if nodes[nodeID].get("type") == 'pTel' \
+                and centromerePos[chromosome] < nodes[nodeID].get("position"):
+
+                    nodes[nodeID]["centromeric"] = True
+
+            elif nodes[nodeID].get("type") == 'qTel' \
+                and centromerePos[chromosome] > nodes[nodeID].get("position"):
+
+                    nodes[nodeID]["centromeric"] = True
+            else: pass
 
     return nodes
 
@@ -784,7 +830,6 @@ def syn_g2(nodes, pathList, telomeric, nonTelomeric):
         if len(temp) > 0:
             nPaths = len(pathList)
             pathList[str(nPaths)] = temp
-            nodes[ temp[0] ]["startPath"] = True
         else: pass
 
         I = len(pathList)-1
@@ -821,50 +866,6 @@ def checkInv(nodes, pathList):
 
             if nodes[ int(nodes[nodeID].get("M")) ].get("side") == 0 and nodes[nodeID].get("cn") > 0: # and j != 0:
                 nodes[nodeID]["inv"] = True
-            else: pass
-
-    return nodes
-
-
-def generateCentromeres(nodes, centromerePos):
-
-    for i in range(len(nodes)):
-        nodeID = nodes[i].get("nodeID")
-
-        # check non telomeric segments
-        if nodes[nodeID].get("type") == 'nonTel' and nodes[nodeID].get("cn") > 0:
-            #print(nodeID)
-            connID = int(nodes[nodeID].get("WT"))
-            chromosome = nodes[nodeID].get("chromID")-1 # for index
-
-            # left direction
-            if nodes[nodeID].get("side") == 0 and centromerePos[chromosome] < nodes[nodeID].get("position") \
-                and centromerePos[chromosome] > nodes[connID].get("position"):
-
-                    nodes[nodeID]["centromeric"] = True
-                    nodes[connID]["centromeric"] = True
-
-            # right direction
-            elif nodes[nodeID].get("side") == 1 and centromerePos[chromosome] > nodes[nodeID].get("position") \
-                and centromerePos[chromosome] < nodes[connID].get("position"):
-
-                    nodes[nodeID]["centromeric"] = True
-                    nodes[connID]["centromeric"] = True
-            else: pass
-
-        # check telomeric segments
-        elif nodes[nodeID].get("type") != 'nonTel' and nodes[nodeID].get("cn") > 0:
-            chromosome = nodes[nodeID].get("chromID")-1 # for index
-
-            if nodes[nodeID].get("type") == 'pTel' \
-                and centromerePos[chromosome] < nodes[nodeID].get("position"):
-
-                    nodes[nodeID]["centromeric"] = True
-
-            elif nodes[nodeID].get("type") == 'qTel' \
-                and centromerePos[chromosome] > nodes[nodeID].get("position"):
-
-                    nodes[nodeID]["centromeric"] = True
             else: pass
 
     return nodes
@@ -1105,6 +1106,10 @@ def main():
             nodes = g1(nodes, lmbda)
 
 
+            # assign centromeres to segments
+            nodes = generateCentromeres(nodes, centromerePos)
+
+
             # path construction
             pathList = connectedPathConstruction(nodes, pathList)
             telomeric, nonTelomeric = unconnectedPathConstruction(nodes)
@@ -1116,10 +1121,6 @@ def main():
 
             # path directionality
             nodes = checkInv(nodes, pathList)
-
-
-            # assign centromeres to segments
-            nodes = generateCentromeres(nodes, centromerePos)
 
 
             # mitosis phase
