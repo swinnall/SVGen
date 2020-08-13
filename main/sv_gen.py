@@ -278,7 +278,12 @@ def generateDSBs(mu):
     return nDSB
 
 
-def generateNodes(nodes,nDSB,nChroms,chromLengths,eventID):
+def generateNodes(nodes,nDSB,nChroms,chromLengths,firstEvent):
+    print("\nEntering node generation\n")
+
+
+
+
 
     # determine nbp on each chromosome prior to additional assignment; if 0 then cn = 1; else: call check func later
     # stores number of break points per chrom (row) for each haplotype (column)
@@ -289,9 +294,11 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,eventID):
 
         nbp_per_chrom[chrIndex][hapIndex] = nbp_per_chrom[chrIndex][hapIndex] + 1
 
-    #print(len(nbp_per_chrom))
-    #print(nbp_per_chrom)
+    # print bp information
+    print(len(nbp_per_chrom))
+    print(nbp_per_chrom)
 
+    # local definitions
     uniqueID = len(nodes)
     hapChoice = [0,1]
 
@@ -346,22 +353,32 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,eventID):
         nodes.append(nodeData)
         uniqueID += 1
 
+    print("\nDetermining cn information\n")
 
-    # determine copy number location
-    if eventID == 0:
+    # initialise cn information
+    if firstEvent == True:
+        if len(nodes) == 0:
+            print("nodes empty - why?!")
+            sys.exit()
+
         for i in range(len(nodes)):
             nodes[i]["cnID"] = 1
             nodes[i]["cn"]   = 1
 
-    else:
+    # no change to system
+    elif firstEvent == False and nDSB == 0:
+        pass
+
+    # non initial event
+    elif firstEvent == False and nDSB > 0:
         # assumed no cn is greater than 5 in simulation
         cnidList   = [i for i in range(1,5)]
 
-        # list of available cnIDs
-        cnidChoice = []
-
         # assign cn info for newly appended junctions
         for i in range(nThreshold, len(nodes), 2):
+
+            # list of available cnIDs
+            cnidChoice = []
 
             # if no breaks on a chromosome then it has cn = 1
             if nbp_per_chrom[nodes[i].get("chromID")-1][nodes[i].get("haplotype")] == 0:
@@ -383,19 +400,30 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,eventID):
                     # those that exist will provide non np.pi return in >= 1 direction
                     for k in range(2):
 
-                        AdjID = findAdjacentJunction(nodes,nodeID)
+                        adjID = findAdjacentJunction(nodes,nodeID)
 
-                        if AdjID == np.pi:
+                        if adjID == np.pi:
                             nodeID = i+1
                         else:
                             #print("node %s exists" %AdjID)
-                            cnidChoice.append( (j, nodes[AdjID].get("cn")) )
+                            cnidChoice.append( (j, nodes[adjID].get("cn"), nodes[nodeID].get("side"), nodes[adjID].get("side")) )
+
+                            # debugging
+                            print("\nCurrent node:")
+                            print(nodes[nodeID].get("nodeID"), nodes[nodeID].get("position"), nodes[nodeID].get("type"), nodes[nodeID].get("side"), nodes[nodeID].get("chromID"), nodes[nodeID].get("cnID"), nodes[nodeID].get("cn"), nodes[nodeID].get("haplotype"))
+                            print("Adjacent node:")
+                            print(nodes[adjID].get("nodeID"), nodes[adjID].get("position"), nodes[adjID].get("type"), nodes[adjID].get("side"), nodes[adjID].get("chromID"), nodes[adjID].get("cnID"), nodes[adjID].get("cn"), nodes[adjID].get("haplotype"))
+
                             break # prevents repeat assignment
 
-
-                # choose random cnid location from available segments
-                idxChoice = int(np.random.choice( [i for i in range(len(cnidChoice))], 1))
-                cnRef     = cnidChoice[idxChoice]
+                # choose cnID location based on which nodes define the segment (opposite directions/sides)
+                print('')
+                for k in range(len(cnidChoice)):
+                    idxChoice = cnidChoice[k]
+                    print(idxChoice)
+                    if idxChoice[2] != idxChoice[3]:
+                        cnRef = idxChoice
+                        break
 
                 # assign cnid
                 nodes[i]["cnID"]   = cnRef[0]
@@ -405,9 +433,13 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,eventID):
                 nodes[i]["cn"]   = cnRef[1]
                 nodes[i+1]["cn"] = cnRef[1]
 
+                # debugging
+                print("chosen cnID = %s" %cnRef[0])
+                print("chosen cn   = %s" %cnRef[1])
 
-    # resets prev path information
+    # reset prev path information
     for i in range(len(nodes)):
+        print(nodes[i].get("cn"))
         if  nodes[i].get("cn") > 0:
             nodes[i]["type"]        = 'nonTel'
             nodes[i]["WT"]          = 'none'
@@ -418,16 +450,18 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,eventID):
 
 
 def generateTelomeres(nodes):
-    for i in range(0,len(nodes),1):
+    print("\nEntering telomere generation\n")
+
+    for i in range(len(nodes)):
         nodeID = nodes[i].get("nodeID")
 
         direction = nodes[nodeID].get("side")
-        AdjacentID = findAdjacentJunction(nodes,nodeID)
+        adjID = findAdjacentJunction(nodes,nodeID)
 
-        if AdjacentID == np.pi and direction == 1:
+        if adjID == np.pi and direction == 1:
             nodes[nodeID]["type"] = 'qTel'
 
-        elif AdjacentID == np.pi and direction == 0:
+        elif adjID == np.pi and direction == 0:
             nodes[nodeID]["type"] = 'pTel'
 
     return nodes
@@ -515,10 +549,11 @@ def findAdjacentJunction(nodes,nodeID):
 
 def g1(nodes, lmbda):
     print('\nEntering G1\n')
+
     # list available wild type connections
     lWT = []
     for i in range(len(nodes)):
-        if nodes[i].get("cn") > 0 and nodes[i].get("WT") == 'none' and nodes[i].get("type") == 'nonTel' : #
+        if nodes[i].get("cn") > 0 and nodes[i].get("type") == 'nonTel' : #
             lWT.append(nodes[i].get("nodeID"))
 
 
@@ -526,7 +561,8 @@ def g1(nodes, lmbda):
     if len(lWT) > 0:
         WTcondition = True
     else: WTcondition = False
-
+    print('WT Connections')
+    print("Debug Key: nodeID, position, type, side, chromID, cnID, cn, haplo")
     cc = 0
     # generate WT connections
     while WTcondition:
@@ -536,8 +572,10 @@ def g1(nodes, lmbda):
 
 
         # debugging
-        print("Adjacent node information: ")
-        print(nodes[adjID].get("nodeID"), nodes[adjID].get("position"), nodes[adjID].get("type"), nodes[adjID].get("side"), nodes[adjID].get("chromID"), nodes[adjID].get("cnID"), nodes[adjID].get("haplotype"))
+        print("Current node:")
+        print(nodes[nodeID].get("nodeID"), nodes[nodeID].get("position"), nodes[nodeID].get("type"), nodes[nodeID].get("side"), nodes[nodeID].get("chromID"), nodes[nodeID].get("cnID"), nodes[nodeID].get("cn"), nodes[nodeID].get("haplotype"))
+        print("Adjacent node:")
+        print(nodes[adjID].get("nodeID"), nodes[adjID].get("position"), nodes[adjID].get("type"), nodes[adjID].get("side"), nodes[adjID].get("chromID"), nodes[adjID].get("cnID"), nodes[adjID].get("cn"), nodes[adjID].get("haplotype"))
 
 
         # checks not connecting to telomere or repeated junctions
@@ -548,7 +586,7 @@ def g1(nodes, lmbda):
             nodes[adjID]["WT"]  = str(nodeID)
 
             print("start J:  %s" %nodeID)
-            print("WT J:     %s" %adjID)
+            print("WT J:     %s\n" %adjID)
 
             # prevent repeat assignment
             lWT.remove(nodeID)
@@ -564,7 +602,7 @@ def g1(nodes, lmbda):
         if cc == 20:
             sys.exit()
 
-
+    print('M Connections\n')
     # list available mutant connections
     lM = []
     for i in range(len(nodes)):
@@ -719,7 +757,7 @@ def connectedPathConstruction(nodes,pathList):
         if len(temp) > 0:
             nPaths = len(pathList)
             pathList[str(nPaths)] = temp
-            print("\nConnected path: %s" %temp)
+            print("Connected path: %s\n" %temp)
 
     return pathList
 
@@ -1169,7 +1207,7 @@ def main():
 
     # cell cycles
     cycleID = 0
-    eventID = 0
+    count   = 0
     for i in range(delta):
         print("\n############################ ")
 
@@ -1179,9 +1217,16 @@ def main():
 
 
         if nDSB > 0:
+            count += 1
+
+            # needed for junction cn initialisation
+            if count == 1:
+                firstEvent = True
+            else: firstEvent = False
+
 
             # initialises nodes dictionary
-            nodes = generateNodes(nodes, nDSB, nChroms, chromLengths, eventID)
+            nodes = generateNodes(nodes, nDSB, nChroms, chromLengths, firstEvent)
             print("Total number of junctions in nucleus: %d\n" %len(nodes))
 
 
@@ -1217,14 +1262,12 @@ def main():
             # open output file for writing SV data
             analysis(nodes, cycleID, dest, mu, lmbda, delta, chromLengths)
 
-            eventID += 1
 
         else: print("Exception, no available junctions.")
 
         cycleID += 1
         pathList.clear()
 
-    print(nodes)
     nodes.clear()
     return
 
