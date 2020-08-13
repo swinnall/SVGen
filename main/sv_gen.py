@@ -279,6 +279,16 @@ def generateDSBs(mu):
 
 
 def generateNodes(nodes,nDSB,nChroms,chromLengths,eventID):
+
+    # determine nbp on each chromosome prior to additional assignment; if 0 then cn = 1; else: call check func later
+    nbp_per_chrom = [ 0 for i in range(nChroms)]
+    for i in range(len(nodes)):
+        nbp_per_chrom[nodes[i].get("chromID")-1] = nbp_per_chrom[nodes[i].get("chromID")-1] + 1
+
+    print(len(nbp_per_chrom))
+    print(nbp_per_chrom)
+
+
     uniqueID = len(nodes)
     hapChoice = [0,1]
 
@@ -335,12 +345,6 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,eventID):
         uniqueID += 2
 
 
-    # determine nbp on each chromosome; if !0 then check cn, else assign cn = 1
-    nbp_per_chrom = [ 0 for i in range(nChroms)]
-    for i in range(len(nodes)):
-        nbp_per_chrom[nodes[i].get("chromID")-1] = nbp_per_chrom[nodes[i].get("chromID")-1] + 1
-
-
     # check copy number location
     if eventID == 0:
         for i in range(len(nodes)):
@@ -356,7 +360,6 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,eventID):
 
         # assign cn info for newly appended junctions
         for i in range(nThreshold, len(nodes), 2):
-            nodeID = i
 
             # if no breaks on a chromosome then it has cn = 1
             if nbp_per_chrom[nodes[i].get("chromID")-1] == 0:
@@ -368,14 +371,18 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,eventID):
             # try different cnIDs, pick randomly between the ones that exist
             else:
                 for j in cnidList:
-                    nodes[i]["cnID"] = j
 
-                    # those that exist will provide non np.pi return in >= 1 direction  - unless new chromosome...
+                    # set index coords every cnID attempt
+                    nodeID = i
+                    nodes[nodeID]["cnID"]   = j
+                    nodes[nodeID+1]["cnID"] = j
+
+                    # those that exist will provide non np.pi return in >= 1 direction
                     for k in range(2):
 
                         AdjID = findAdjacentJunction(nodes,nodeID)
                         print(AdjID)
-
+                        
                         if AdjID == np.pi:
                             nodeID = i+1
                         else:
