@@ -1015,9 +1015,10 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
             # appends first centromeric node
             if nodeID == centList[j] and len(options) == 0:
                 options.append(nodeID)
-                
+
                 # subpath always starts from telomere,
-                # if 1st centromere is not a telomeric segment then append:
+                # if 1st centromere is not a telomeric segment then append
+                # if it is telomeric then it will be appended naturally later
                 if nodes[nodeID].get("type") == nonTel:
                     subPathStartList.append(pathList.get(str(i))[0])
 
@@ -1114,6 +1115,7 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
         # connect new junctions to path
         if segType == 'pTel':
             subPathStartList.append(uniqueID)
+            subPathStartList.append(uniqueID+1)
 
             # segment becomes non telomeric as pos < jPos
             nodes[nodeChoice]["type"] = 'nonTel'
@@ -1130,6 +1132,7 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
             nodes[uniqueID]["centromeric"] = True
 
         elif segType == 'qTel':
+            # assuming 
             subPathStartList.append(uniqueID+1)
 
             # segment becomes non telomeric as pos > jPos
