@@ -278,7 +278,7 @@ def generateDSBs(mu):
     return nDSB
 
 
-def generateNodes(nodes,nDSB,nChroms,chromLengths,cycleID):
+def generateNodes(nodes,nDSB,nChroms,chromLengths,eventID):
     uniqueID = len(nodes)
     hapChoice = [0,1]
 
@@ -335,8 +335,14 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,cycleID):
         uniqueID += 2
 
 
+    # determine nbp on each chromosome; if !0 then check cn, else assign cn = 1
+    nbp_per_chrom = [ 0 for i in range(nChroms)]
+    for i in range(len(nodes)):
+        nbp_per_chrom[nodes[i].get("chromID")-1] = nbp_per_chrom[nodes[i].get("chromID")-1] + 1
+
+
     # check copy number location
-    if cycleID == 0:
+    if eventID == 0:
         for i in range(len(nodes)):
             nodes[i]["cnID"] = 1
             nodes[i]["cn"]   = 1
@@ -348,31 +354,41 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,cycleID):
         # list of available cnIDs
         cnidChoice = []
 
-        # try different cnIDs, pick randomly between the ones that exist
+        # assign cn info for newly appended junctions
         for i in range(nThreshold, len(nodes), 2):
             nodeID = i
-            for j in cnidList:
-                nodes[i]["cnID"] = j
 
-                # those that exist will provide non np.pi return in >= 1 direction
-                for k in range(2):
+            # if no breaks on a chromosome then it has cn = 1
+            if nbp_per_chrom[nodes[i].get("chromID")-1] == 0:
+                nodes[i]["cnID"]   = 1
+                nodes[i]["cn"]     = 1
+                nodes[i+1]["cnID"] = 1
+                nodes[i+1]["cn"]   = 1
 
-                    AdjID = findAdjacentJunction(nodes,nodeID)
+            # try different cnIDs, pick randomly between the ones that exist
+            else:
+                for j in cnidList:
+                    nodes[i]["cnID"] = j
 
-                    if AdjID == np.pi:
-                        nodeID = i+1
-                    else:
-                        cnidChoice.append(j)
-                        break # prevents repeat assignment of j
+                    # those that exist will provide non np.pi return in >= 1 direction  - unless new chromosome...
+                    for k in range(2):
 
-            # choose random cnid from available segments
-            nodes[i]["cnID"] = int(np.random.choice(cnidChoice,1))
-            nodes[i+1]["cnID"] = int(np.random.choice(cnidChoice,1))
+                        AdjID = findAdjacentJunction(nodes,nodeID)
+                        print(AdjID)
 
-            # call associated cn for segment
-            nodes[i]["cn"] = max(cnidChoice)
-            nodes[i+1]["cn"] = max(cnidChoice)
+                        if AdjID == np.pi:
+                            nodeID = i+1
+                        else:
+                            cnidChoice.append(j)
+                            break # prevents repeat assignment of j
 
+                # choose random cnid from available segments
+                nodes[i]["cnID"]   = int(np.random.choice(cnidChoice,1))
+                nodes[i+1]["cnID"] = int(np.random.choice(cnidChoice,1))
+
+                # call associated cn for segment
+                nodes[i]["cn"]   = max(cnidChoice)
+                nodes[i+1]["cn"] = max(cnidChoice)
 
 
     # resets prev path information
@@ -1135,6 +1151,7 @@ def main():
 
     # cell cycles
     cycleID = 0
+    eventID = 0
     for i in range(delta):
         print("\n############################ ")
 
@@ -1143,16 +1160,16 @@ def main():
         print("Cycle: %d; Number of DSBs: %d" %(cycleID, nDSB))
 
 
-        # initialises nodes dictionary
-        nodes = generateNodes(nodes, nDSB, nChroms, chromLengths, cycleID)
-        print("Total number of junctions in nucleus: %d\n" %len(nodes))
-
-
-        # define path ends
-        nodes = generateTelomeres(nodes)
-
-
         if nDSB > 0:
+
+            # initialises nodes dictionary
+            nodes = generateNodes(nodes, nDSB, nChroms, chromLengths, eventID)
+            print("Total number of junctions in nucleus: %d\n" %len(nodes))
+
+
+            # define path ends
+            nodes = generateTelomeres(nodes)
+
 
             # growth phase
             nodes = g1(nodes, lmbda)
@@ -1182,10 +1199,13 @@ def main():
             # open output file for writing SV data
             analysis(nodes, cycleID, dest, mu, lmbda, delta, chromLengths)
 
+            eventID += 1
 
         else: print("Exception, no available junctions.")
+
         cycleID += 1
         pathList.clear()
+
     print(nodes)
     nodes.clear()
     return
