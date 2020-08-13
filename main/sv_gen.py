@@ -251,16 +251,20 @@ class CheckBool():
 
     def checkCentromere(nodes,pathList,i):
 
-        tally = 0
+        tally    = 0
         centList = []
 
         for j in range(len(pathList.get(str(i)))):
             nodeID = pathList.get(str(i))[j]
 
-            if nodes[nodeID].get("centromeric") == True:
+            if nodes[nodeID].get("centromeric") == True and nodes[nodeID].get("type") != 'nonTel':
                 tally += 1
                 centList.append(nodeID)
-            else: pass
+
+            # nonTel types are counted twice for the same centromere
+            elif nodes[nodeID].get("centromeric") == True and nodes[nodeID].get("type") == 'nonTel':
+                tally += 0.5
+                centList.append(nodeID)
 
         nCent = tally
         return nCent, centList
@@ -993,14 +997,17 @@ def checkInv(nodes, pathList):
 
 def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
 
+    # subpath start list
+    subPathStartList = []
+
     # a threshold variable
     m = 0
 
-    # segment options for breakpoints
-    options = []
-
     # nCent - 1 = number of breakpoints
     for j in range(nCent-1):
+
+        # segment options for breakpoints
+        options = []
 
         for k in range(m, len(pathList.get(str(i))), 1):
             nodeID = pathList.get(str(i))[k]
@@ -1008,16 +1015,21 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
             # appends first centromeric node
             if nodeID == centList[j] and len(options) == 0:
                 options.append(nodeID)
+                
+                # subpath always starts from telomere,
+                # if 1st centromere is not a telomeric segment then append:
+                if nodes[nodeID].get("type") == nonTel:
+                    subPathStartList.append(pathList.get(str(i))[0])
 
             # appends nodes between centromeres
-            elif nodeID != centList[j] and len(options) != 0:
+            elif nodeID != centList[j+1] and len(options) != 0:
                 options.append(nodeID)
 
             # appends second centromeric node, ending options
-            elif nodeID == centList[j] and len(options) != 0:
+            elif nodeID == centList[j+1] and len(options) != 0:
                 options.append(nodeID)
                 # m becomes start point for next breakpoint
-                m = k
+                m = k+1
                 break
 
 
@@ -1080,7 +1092,7 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
             "WT":          'none',
             "M":           'none',
             "centromeric": False,
-            "inv":         False,
+            "inv":         nodes[nodeChoice].get("inv"),
         })
         nodes.append({
             "nodeID":    uniqueID+1,
@@ -1095,12 +1107,14 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
             "WT":          'none',
             "M":           'none',
             "centromeric": False,
-            "inv":         False,
+            "inv":         nodes[nodeChoice].get("inv"),
         })
 
 
         # connect new junctions to path
         if segType == 'pTel':
+            subPathStartList.append(uniqueID)
+
             # segment becomes non telomeric as pos < jPos
             nodes[nodeChoice]["type"] = 'nonTel'
             nodes[nodeChoice]["WT"]   = str(uniqueID+1)
@@ -1116,6 +1130,8 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
             nodes[uniqueID]["centromeric"] = True
 
         elif segType == 'qTel':
+            subPathStartList.append(uniqueID+1)
+
             # segment becomes non telomeric as pos > jPos
             nodes[nodeChoice]["type"] = 'nonTel'
             nodes[nodeChoice]["WT"]   = str(uniqueID)
@@ -1131,6 +1147,7 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
             nodes[uniqueID+1]["centromeric"] = True
 
         elif segType == 'nonTel':
+            subPathStartList.append(uniqueID+1)
             connID = int(nodes[nodeChoice].get("WT"))
 
             if jPos > nodes[connID].get("position"):
@@ -1150,10 +1167,13 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
             # leave centromere assignment for next cell cycle
 
 
-        # define subpaths
-        subPaths = [ [] for i in range(nCent)]
-        
+    ## end of introducing breakpoints
+    # define subpaths:
+    subPaths = [ [] for i in range(nCent)]
 
+
+
+    # assign subpaths:
 
     return nodes
 
@@ -1233,26 +1253,23 @@ def main():
     nodes    = []
     pathList = {}
 
-
     # import chromosome lengths
     chromLengths = pd.read_csv("../input/hg38.size.tsv", header=None, sep='\t')
-
 
     # define centromere positions
     centromerePos = []
     for length in range(len(chromLengths)):
         centromerePos.append( chromLengths[1][length] / 2 )
 
-
     # parameters
     mu    = 10   # DSB
     lmbda = 5    # max number of unrepaired segments a cell can handle
     delta = 2    # nCycles
 
-
     # cell cycles
     cycleID = 0
     count   = 0
+
     for i in range(delta):
         print("\n############################ ")
 
