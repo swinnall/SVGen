@@ -281,10 +281,6 @@ def generateDSBs(mu):
 def generateNodes(nodes,nDSB,nChroms,chromLengths,firstEvent):
     print("\nEntering node generation\n")
 
-
-
-
-
     # determine nbp on each chromosome prior to additional assignment; if 0 then cn = 1; else: call check func later
     # stores number of break points per chrom (row) for each haplotype (column)
     nbp_per_chrom = [ [0,0] for i in range(nChroms)]
@@ -295,8 +291,8 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,firstEvent):
         nbp_per_chrom[chrIndex][hapIndex] = nbp_per_chrom[chrIndex][hapIndex] + 1
 
     # print bp information
-    print(len(nbp_per_chrom))
-    print(nbp_per_chrom)
+    #print(len(nbp_per_chrom))
+    #print(nbp_per_chrom)
 
     # local definitions
     uniqueID = len(nodes)
@@ -417,10 +413,8 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,firstEvent):
                             break # prevents repeat assignment
 
                 # choose cnID location based on which nodes define the segment (opposite directions/sides)
-                print('')
                 for k in range(len(cnidChoice)):
                     idxChoice = cnidChoice[k]
-                    print(idxChoice)
                     if idxChoice[2] != idxChoice[3]:
                         cnRef = idxChoice
                         break
@@ -439,7 +433,6 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,firstEvent):
 
     # reset prev path information
     for i in range(len(nodes)):
-        print(nodes[i].get("cn"))
         if  nodes[i].get("cn") > 0:
             nodes[i]["type"]        = 'nonTel'
             nodes[i]["WT"]          = 'none'
@@ -1000,116 +993,120 @@ def checkInv(nodes, pathList):
 
 def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
 
-            # nCent - 1 number of breakpoints
-            for j in range(nCent-1):
+    # nCent - 1 = number of breakpoints
+    for j in range(nCent-1):
 
-                daughterCell = int(random.randint(0,1))
-                if daughterCell == 1:
-                    pass
-                else:
-                    marker = 0
-                    for k in range(marker, len(pathList.get(str(i))), 1):
+        daughterCell = int(random.randint(0,1))
+        if daughterCell == 1:
+            pass
+        else:
+            marker = 0
+            for k in range(marker, len(pathList.get(str(i))), 1):
 
-                        nodes[ pathList.get(str(i))[j] ]["cn"] = 0
+                nodes[ pathList.get(str(i))[j] ]["cn"] = 0
 
-                        if k == centList[j]:
-                            marker = k
-                            break
-                        else: pass
+                if k == centList[j]:
+                    marker = k
                     break
+                else: pass
+            break
+
+        m = 0
+        cycleID = 0
+        options = []
+        for k in range(m, len(pathList.get(str(i))), 1):
+            nodeID = pathList.get(str(i))[k]
+
+            if nodeID == centList[j] and len(options) == 0:
+                options.append(nodeID)
+
+            elif k != centList[j] and cycleID == 1:
+                options.append(nodeID)
+
+            elif nodeID == centList[j] and len(options) != 0:
+                options.append(nodeID)
+                m = k
+                break
+
+            else: pass
+
+        # choosing segment to break
+        nodeChoice = int(np.random.choice(options,1))
+        print("\noptions: %s" %options)
+        print("decision: %s" %nodeChoice)
+
+        # positional information
+        jPos    = nodes[nodeChoice].get("position")
+        jChrom  = nodes[nodeChoice].get("chromID")
+        segType = nodes[nodeChoice].get("type")
+        centPos = int(centromerePos[jChrom-1])
+
+        print("key: nodeID, junction position, chromosome, type, centromere position")
+        print("%s %s %s %s %s" %(nodeChoice, jPos, jChrom, segType, centPos))
+
+        # choosing breakpoint position
+        if segType == 'pTel':
+
+            pos = random.randint(centPos, jPos)
 
 
-                m = 0
-                cycleID = 0
-                options = []
-                for k in range(m, len(pathList.get(str(i))), 1):
-                    nodeID = pathList.get(str(i))[k]
+        elif segType == 'qTel':
 
-                    if nodeID == centList[j] and len(options) == 0:
-                        options.append(nodeID)
-
-                    elif k != centList[j] and cycleID == 1:
-                        options.append(nodeID)
-
-                    elif nodeID == centList[j] and len(options) != 0:
-                        options.append(nodeID)
-                        m = k
-                        break
-
-                    else: pass
-
-                print("options: %s" %options)
-                nodeChoice = int(np.random.choice(options,1))
-                jPos    = nodes[nodeChoice].get("position")
-                jChrom  = nodes[nodeChoice].get("chromID")
-                segType = nodes[nodeChoice].get("type")
-
-                centPos = int(centromerePos[jChrom-1])
-
-                print("\n %s %s %s %s %s" %(nodeChoice, jPos, jChrom, segType, centPos))
-
-                if segType == 'pTel':
-
-                    pos = random.randint(centPos, jPos)
+            pos = random.randint(jPos, centPos)
 
 
-                elif segType == 'qTel':
+        elif segType == 'nonTel' and nodes[nodeChoice].get("centromeric") == True:
 
-                    pos = random.randint(jPos, centPos)
+            if jPos > centPos:
+                pos = random.randint(centPos, jPos)
 
-
-                elif segType == 'nonTel' and nodes[nodeChoice].get("centromeric") == True:
-
-                    if jPos > centPos:
-                        pos = random.randint(centPos, jPos)
-
-                    elif jPos < centPos:
-                        pos = random.randint(jPos, centPos)
+            elif jPos < centPos:
+                pos = random.randint(jPos, centPos)
 
 
-                elif segType == 'nonTel' and nodes[nodeChoice].get("centromeric") == False:
-                    connID = int(nodes[nodeChoice].get("WT"))
+        elif segType == 'nonTel' and nodes[nodeChoice].get("centromeric") == False:
+            connID = int(nodes[nodeChoice].get("WT"))
 
-                    if jPos > nodes[connID].get("position"):
-                        pos = random.randint(nodes[connID].get("position"), jPos)
+            if jPos > nodes[connID].get("position"):
+                pos = random.randint(nodes[connID].get("position"), jPos)
 
-                    elif jPos < nodes[connID].get("position"):
-                        pos = random.randint(jPos, nodes[connID].get("position"))
-
-
-                nodes.append({
-                    "nodeID":    len(nodes),
-                    "chromID":   nodes[nodeChoice].get("chromID"),
-                    "haplotype": nodes[nodeChoice].get("haplotype"),
-                    "position":  pos,
-                    "side":      0,
-                    "cn":        nodes[nodeChoice].get("cn"),
-                    "cnID":      nodes[nodeChoice].get("cnID"),
-
-                    "type":        'nonTel',
-                    "WT":          'none',
-                    "M":           'none',
-                    "centromeric": False,
-                    "inv":         False,
-                })
-                nodes.append({
-                    "nodeID":    len(nodes),
-                    "chromID":   nodes[nodeChoice].get("chromID"),
-                    "haplotype": nodes[nodeChoice].get("haplotype"),
-                    "position":  pos,
-                    "side":      1,
-                    "cn":        nodes[nodeChoice].get("cn"),
-                    "cnID":      nodes[nodeChoice].get("cnID"),
-
-                    "type":        'nonTel',
-                    "WT":          'none',
-                    "M":           'none',
-                    "centromeric": False,
-                    "inv":         False,
-                })
+            elif jPos < nodes[connID].get("position"):
+                pos = random.randint(jPos, nodes[connID].get("position"))
 
 
-            return nodes
+        # appending new breakpoints to nodes
+        nodes.append({
+            "nodeID":    len(nodes),
+            "chromID":   nodes[nodeChoice].get("chromID"),
+            "haplotype": nodes[nodeChoice].get("haplotype"),
+            "position":  pos,
+            "side":      0,
+            "cn":        nodes[nodeChoice].get("cn"),
+            "cnID":      nodes[nodeChoice].get("cnID"),
+
+            "type":        'nonTel',
+            "WT":          'none',
+            "M":           'none',
+            "centromeric": False,
+            "inv":         False,
+        })
+        nodes.append({
+            "nodeID":    len(nodes),
+            "chromID":   nodes[nodeChoice].get("chromID"),
+            "haplotype": nodes[nodeChoice].get("haplotype"),
+            "position":  pos,
+            "side":      1,
+            "cn":        nodes[nodeChoice].get("cn"),
+            "cnID":      nodes[nodeChoice].get("cnID"),
+
+            "type":        'nonTel',
+            "WT":          'none',
+            "M":           'none',
+            "centromeric": False,
+            "inv":         False,
+        })
+
+    return nodes
 
 
 def mitosis(nodes, pathList, cycleID, delta, centromerePos):
