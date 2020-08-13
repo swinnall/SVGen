@@ -2,11 +2,11 @@
 
 ################################# comments ###################################
 
-" analysis - insertions: currently not accounting for BFB unconnected junctions "
+" analysis - insertions: currently not accycleIDing for BFB unconnected junctions "
 
 " analysis - duplications: same problem as above "
 
-" analysis - inversions: may be counted twice, not a big problem"
+" analysis - inversions: may be cycleIDed twice, not a big problem"
 
 " do i need to return nodes everytime i change a key? "
 
@@ -49,9 +49,9 @@ class cirosPlot():
     strand2  = '+'
     extra    = 0
     hap      = 0
-    cycleID  = 0
+    cycleNum  = 0
 
-    def __init__(self, chr1, coord1, strand1, chr2, coord2, strand2, extra, hap, cycleID):
+    def __init__(self, chr1, coord1, strand1, chr2, coord2, strand2, extra, hap, cycleNum):
         self.chr1
         self.coord1
         self.strand1
@@ -60,9 +60,9 @@ class cirosPlot():
         self.strand2
         self.extra
         self.hap
-        self.cycleID
+        self.cycleNum
 
-    def deletions(self, nodes, count, dest):
+    def deletions(self, nodes, cycleID, dest):
         for i in range(len(nodes)):
             if nodes[i].get("cn") == 0:
                 chr1     = nodes[i].get("chromID")
@@ -72,15 +72,15 @@ class cirosPlot():
                 coord2   = coord1
                 strand2  = '-'
                 extra    = 'svtype=DEL'
-                cycleID  = count
+                cycleNum  = cycleID
 
                 # write to csv
                 with open('../output/0' +  str(dest) + '/sv_data.tsv', 'a', newline='') as file:
                     writer = csv.writer(file, delimiter = '\t')
-                    writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2,	extra, cycleID])
+                    writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2,	extra, cycleNum])
         return
 
-    def insertions(self, nodes, count, dest):
+    def insertions(self, nodes, cycleID, dest):
         for i in range(len(nodes)):
 
             if nodes[i].get("cn") > 0 and nodes[i].get("M") != 'none' and \
@@ -93,16 +93,16 @@ class cirosPlot():
                 coord2   = nodes[ int(nodes[i].get("M")) ].get("position")
                 strand2  = '+'
                 extra    = 'svtype=INS'
-                cycleID  = count
+                cycleNum  = cycleID
 
                 # write to csv
                 with open('../output/0' +  str(dest) + '/sv_data.tsv', 'a', newline='') as file:
                     writer = csv.writer(file, delimiter = '\t')
-                    writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2,	extra, cycleID])
+                    writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2,	extra, cycleNum])
 
             else: pass
 
-    def inversions(self, nodes, count, dest, chromLengths):
+    def inversions(self, nodes, cycleID, dest, chromLengths):
         for i in range(len(nodes)):
 
             if nodes[i].get("cn") > 0 and nodes[i].get("inv") == True:
@@ -116,7 +116,7 @@ class cirosPlot():
                     coord2   = nodes[ int(nodes[i].get("WT")) ].get("position")
                     strand2  = '+'
                     extra    = 'svtype=INV'
-                    cycleID  = count
+                    cycleNum  = cycleID
 
                 elif nodes[i].get("type") == 'pTel':
 
@@ -127,7 +127,7 @@ class cirosPlot():
                     coord2   = 0
                     strand2  = '+'
                     extra    = 'svtype=INV'
-                    cycleID  = count
+                    cycleNum  = cycleID
 
                 elif nodes[i].get("type") == 'qTel':
 
@@ -138,22 +138,30 @@ class cirosPlot():
                     coord2   = chromLengths[1][chr1-1]
                     strand2  = '+'
                     extra    = 'svtype=INV'
-                    cycleID  = count
+                    cycleNum  = cycleID
 
                 # write to csv
                 with open('../output/0' +  str(dest) + '/sv_data.tsv', 'a', newline='') as file:
                     writer = csv.writer(file, delimiter = '\t')
-                    writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2,	extra, cycleID])
+                    writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2,	extra, cycleNum])
         return
 
-    def duplications(self, nodes, count, dest, chromLengths):
+    def duplications(self, nodes, cycleID, dest, chromLengths):
         coveredNodes = []
+
+        # debugging
+        print("\nAnalysis - Duplications Error: ")
+
         for i in range(len(nodes)):
             nodeID = nodes[i].get("nodeID")
             coveredNodes.append(nodeID)
 
             if nodes[i].get("type") == 'nonTel' and nodes[i].get("M") != 'none':
-                print(nodes[i])
+
+                # debugging
+                print("Node causing error: %s" %nodes[i])
+
+
                 AdjacentID = nodes[ int(nodes[i].get("WT")) ].get("nodeID")
 
                 if AdjacentID not in coveredNodes:
@@ -163,12 +171,12 @@ class cirosPlot():
                     end     = nodes[AdjacentID].get("position")
                     cn      = nodes[i].get("cn")
                     hap     = nodes[i].get("haplotype")
-                    cycleID = count
+                    cycleNum = cycleID
 
                     # write to csv
                     with open('../output/0' +  str(dest) + '/cn_data.tsv', 'a', newline='') as file:
                         writer = csv.writer(file, delimiter = '\t')
-                        writer.writerow([chr1, start, end, cn, hap, cycleID])
+                        writer.writerow([chr1, start, end, cn, hap, cycleNum])
                 else: pass
 
 
@@ -179,12 +187,12 @@ class cirosPlot():
                 end     = nodes[i].get("position")
                 cn      = nodes[i].get("cn")
                 hap     = nodes[i].get("haplotype")
-                cycleID = count
+                cycleNum = cycleID
 
                 # write to csv
                 with open('../output/0' +  str(dest) + '/cn_data.tsv', 'a', newline='') as file:
                     writer = csv.writer(file, delimiter = '\t')
-                    writer.writerow([chr1, start, end, cn, hap, cycleID])
+                    writer.writerow([chr1, start, end, cn, hap, cycleNum])
 
 
             elif nodes[i].get("type") == 'qTel':
@@ -194,12 +202,12 @@ class cirosPlot():
                 end     = chromLengths[1][chr1-1]
                 cn      = nodes[i].get("cn")
                 hap     = nodes[i].get("haplotype")
-                cycleID = count
+                cycleNum = cycleID
 
                 # write to csv
                 with open('../output/0' +  str(dest) + '/cn_data.tsv', 'a', newline='') as file:
                     writer = csv.writer(file, delimiter = '\t')
-                    writer.writerow([chr1, start, end, cn, hap, cycleID])
+                    writer.writerow([chr1, start, end, cn, hap, cycleNum])
 
             else: pass
 
@@ -270,21 +278,30 @@ def generateDSBs(mu):
     return nDSB
 
 
-def initialiseNodes(nodes,nDSB):
+def generateNodes(nodes,nDSB,nChroms,chromLengths,cycleID):
     uniqueID = len(nodes)
-    batchIDX = len(nodes)
+    hapChoice = [0,1]
+
+    # nThreshold is the marker between nNodes in each cell cycle
+    nThreshold = len(nodes)
 
     # twice the number of breakpoints added (LR junctions)
-    for i in range(2*nDSB):
+    for i in range(0, 2*nDSB, 2):
+
+        # generate positional information
+        chromosomeTarget = random.randint(1, nChroms)
+        breakpointPos    = random.randint(0, chromLengths[1][chromosomeTarget-1])
+        haplotype        = np.random.choice(hapChoice, 1)
+
         nodeData = {
             # identification:
-            "nodeID":   uniqueID,
-            "chromID":   0,
-            "haplotype": 0,
-            "position":  0,
+            "nodeID":    uniqueID,
+            "chromID":   chromosomeTarget,
+            "haplotype": haplotype[0],
+            "position":  breakpointPos,
             "side":      0,
-            "cn":        1,
-            "cnID":      1,
+            "cn":        'temp',
+            "cnID":      'temp',
             # connections:
             "type":        'nonTel',
             "WT":          'none',
@@ -294,45 +311,82 @@ def initialiseNodes(nodes,nDSB):
             "inv":         False,
         }
         nodes.append(nodeData)
-        uniqueID += 1
+
+        nodeData = {
+            # identification:
+            "nodeID":    uniqueID + 1,
+            "chromID":   chromosomeTarget,
+            "haplotype": haplotype[0],
+            "position":  breakpointPos,
+            "side":      1,
+            "cn":        'temp',
+            "cnID":      'temp',
+            # connections:
+            "type":        'nonTel',
+            "WT":          'none',
+            "M":           'none',
+            # properties:
+            "centromeric": False,
+            "inv":         False,
+        }
+        nodes.append(nodeData)
+
+        # update for next append pair
+        uniqueID += 2
+
+
+    # check copy number location
+    if cycleID == 0:
+        for i in range(len(nodes)):
+            nodes[i]["cnID"] = 1
+            nodes[i]["cn"]   = 1
+
+    else:
+        # assumed no cn is greater than 5 in simulation
+        cnidList   = [i for i in range(1,5)]
+
+        # list of available cnIDs
+        cnidChoice = []
+
+        # try different cnIDs, pick randomly between the ones that exist
+        for i in range(nThreshold, len(nodes), 2):
+            nodeID = i
+            for j in cnidList:
+                nodes[i]["cnID"] = j
+
+                # those that exist will provide non np.pi return in >= 1 direction
+                for k in range(2):
+
+                    AdjID = findAdjacentJunction(nodes,nodeID)
+
+                    if AdjID == np.pi:
+                        nodeID = i+1
+                    else:
+                        cnidChoice.append(j)
+                        break # prevents repeat assignment of j
+
+            # choose random cnid from available segments
+            nodes[i]["cnID"] = int(np.random.choice(cnidChoice,1))
+            nodes[i+1]["cnID"] = int(np.random.choice(cnidChoice,1))
+
+            # call associated cn for segment
+            nodes[i]["cn"] = max(cnidChoice)
+            nodes[i+1]["cn"] = max(cnidChoice)
+
+
 
     # resets prev path information
     for i in range(len(nodes)):
-        if nodes[i].get("cn") > 0:
-            nodes[i]["type"] = 'nonTel'
-            nodes[i]["WT"]   = 'none'
+        if  nodes[i].get("cn") > 0:
+            nodes[i]["type"]        = 'nonTel'
+            nodes[i]["WT"]          = 'none'
             nodes[i]["centromeric"] = False
-            nodes[i]["inv"] = False
-
-    return nodes, batchIDX
-
-
-def breakpointPos(nodes,batchIDX,nChroms,chromLengths):
-
-    hapChoice = [0,1]
-    for i in range(batchIDX,len(nodes),2):
-
-        chromosomeTarget = random.randint(1, nChroms)
-        breakpointPos    = random.randint(0, chromLengths[1][chromosomeTarget-1])
-        haplotype        = np.random.choice(hapChoice, 1)
-        cnID             = random.randint(1, nodes[i].get("cn"))
-
-        nodes[i]["chromID"]   = chromosomeTarget
-        nodes[i]["position"]  = breakpointPos
-        nodes[i]["side"]      = 0
-        nodes[i]["haplotype"] = haplotype[0]
-        nodes[i]["cnID"]      = cnID
-
-        nodes[i+1]["chromID"]   = chromosomeTarget
-        nodes[i+1]["position"]  = breakpointPos
-        nodes[i+1]["side"]      = 1
-        nodes[i+1]["haplotype"] = haplotype[0]
-        nodes[i+1]["cnID"]      = cnID
+            nodes[i]["inv"]         = False
 
     return nodes
 
 
-def telomericJunctions(nodes):
+def generateTelomeres(nodes):
     for i in range(0,len(nodes),1):
         nodeID = nodes[i].get("nodeID")
 
@@ -359,10 +413,11 @@ def findAdjacentJunction(nodes,nodeID):
     connection.id_   = nodeID
     connection.chrom = nodes[nodeID].get("chromID")
     connection.cnid  = nodes[nodeID].get("cnID")
-    connection.cn    = nodes[nodeID].get("cn")
+    #connection.cn    = nodes[nodeID].get("cn")
     connection.haplo = nodes[nodeID].get("haplotype")
 
-    print("")
+    # debugging
+    print("\nConnection information: current junction information:")
     print(connection.id_, location, nodes[nodeID].get("type"), direction, connection.chrom, connection.cnid, connection.haplo)
     print(nodes[nodeID])
 
@@ -371,7 +426,7 @@ def findAdjacentJunction(nodes,nodeID):
     # locates junctions along the chromosome in LR direction
     for i in range(len(nodes)):
         if nodes[i].get("chromID") == connection.chrom                    \
-            and nodes[i].get("cnID") == connection.cnid                     \
+            and nodes[i].get("cnID") == connection.cnid                   \
             and nodes[i].get("haplotype") == connection.haplo             \
             and direction == 1 and nodes[i].get("position") > location:
                 rightAdjNodes.append(nodes[i])
@@ -425,11 +480,6 @@ def findAdjacentJunction(nodes,nodeID):
     elif len(leftAdjNodes) == 0 and len(rightAdjNodes) == 0:
         nodeID = np.pi
 
-
-    # check chromosome region exists, if not: delete junction
-    if nodeID != np.pi and nodes[nodeID].get("cn") == 0:
-        nodes[connection.id_]["cn"] = 0
-
     return nodeID
 
 
@@ -438,7 +488,7 @@ def g1(nodes, lmbda):
     # list available wild type connections
     lWT = []
     for i in range(len(nodes)):
-        if nodes[i].get("cn") > 0 and nodes[i].get("WT") == 'none' and nodes[i].get("type") == 'nonTel' : # 
+        if nodes[i].get("cn") > 0 and nodes[i].get("WT") == 'none' and nodes[i].get("type") == 'nonTel' : #
             lWT.append(nodes[i].get("nodeID"))
 
 
@@ -453,7 +503,12 @@ def g1(nodes, lmbda):
 
         nodeID = int(np.random.choice(lWT, 1))
         adjID = findAdjacentJunction(nodes,nodeID)
+
+
+        # debugging
+        print("Adjacent node information: ")
         print(nodes[adjID].get("nodeID"), nodes[adjID].get("position"), nodes[adjID].get("type"), nodes[adjID].get("side"), nodes[adjID].get("chromID"), nodes[adjID].get("cnID"), nodes[adjID].get("haplotype"))
+
 
         # checks not connecting to telomere or repeated junctions
         if adjID in lWT:
@@ -714,6 +769,7 @@ def syn_g2(nodes, pathList, telomeric, nonTelomeric):
     telomericCopied    = [[] for i in range(len(telomeric))]
     nonTelomericCopied = [[] for i in range(len(nonTelomeric))]
 
+    # unconnected paths
     uniqueID = len(nodes)
     for i in range(len(telomeric)):
         print("\nNew path, key i: %s" %i)
@@ -893,7 +949,7 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
 
 
                 m = 0
-                count = 0
+                cycleID = 0
                 options = []
                 for k in range(m, len(pathList.get(str(i))), 1):
                     nodeID = pathList.get(str(i))[k]
@@ -901,7 +957,7 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
                     if nodeID == centList[j] and len(options) == 0:
                         options.append(nodeID)
 
-                    elif k != centList[j] and count == 1:
+                    elif k != centList[j] and cycleID == 1:
                         options.append(nodeID)
 
                     elif nodeID == centList[j] and len(options) != 0:
@@ -985,7 +1041,7 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
             return nodes
 
 
-def mitosis(nodes, pathList, count, delta, centromerePos):
+def mitosis(nodes, pathList, cycleID, delta, centromerePos):
 
     for i in range(len(pathList)):
         daughterCell = int(random.randint(0,1))
@@ -1010,9 +1066,9 @@ def mitosis(nodes, pathList, count, delta, centromerePos):
         # breakage
         elif nCent > 1:
 
-            if count < delta-1:
+            if cycleID < delta-1:
                 nodes = cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos)
-            elif count == delta-1:
+            elif cycleID == delta-1:
 
                 for j in range(len(pathList.get(str(i)))):
                     nodeID  = pathList.get(str(i))[j]
@@ -1025,9 +1081,9 @@ def mitosis(nodes, pathList, count, delta, centromerePos):
     return nodes
 
 
-def analysis(nodes, count, dest, mu, lmbda, delta, chromLengths):
+def analysis(nodes, cycleID, dest, mu, lmbda, delta, chromLengths):
 
-    if count == 0:
+    if cycleID == 0:
 
         with open('../output/0' +  str(dest) + '/parameters.tsv', 'w', newline='') as file:
             writer = csv.writer(file, delimiter = '\t')
@@ -1036,17 +1092,17 @@ def analysis(nodes, count, dest, mu, lmbda, delta, chromLengths):
 
         with open('../output/0' +  str(dest) + '/sv_data.tsv', 'w', newline='') as file:
             writer = csv.writer(file, delimiter = '\t')
-            writer.writerow(["chr1", "coord1", "strand1", "chr2", "coord2", "strand2",	"extra", "cycleID"])
+            writer.writerow(["chr1", "coord1", "strand1", "chr2", "coord2", "strand2",	"extra", "cycleNum"])
 
         with open('../output/0' +  str(dest) + '/cn_data.tsv', 'w', newline='') as file:
             writer = csv.writer(file, delimiter = '\t')
-            writer.writerow(["chr", "start", "end", "cn", "haplotype", "cycleID"])
+            writer.writerow(["chr", "start", "end", "cn", "haplotype", "cycleNum"])
 
     # analyse data for SVs
-    calcSVs.deletions(nodes,count,dest)
-    calcSVs.insertions(nodes,count,dest)
-    calcSVs.inversions(nodes,count,dest,chromLengths)
-    calcSVs.duplications(nodes,count,dest,chromLengths)
+    calcSVs.deletions(nodes,cycleID,dest)
+    calcSVs.insertions(nodes,cycleID,dest)
+    calcSVs.inversions(nodes,cycleID,dest,chromLengths)
+    calcSVs.duplications(nodes,cycleID,dest,chromLengths)
 
     return
 
@@ -1078,26 +1134,22 @@ def main():
 
 
     # cell cycles
-    count = 0
+    cycleID = 0
     for i in range(delta):
         print("\n############################ ")
 
         # generate breakpoints
         nDSB = generateDSBs(mu)
-        print("Cycle: %d; Number of DSBs: %d" %(count, nDSB))
+        print("Cycle: %d; Number of DSBs: %d" %(cycleID, nDSB))
 
 
         # initialises nodes dictionary
-        nodes, batchIDX = initialiseNodes(nodes,nDSB)
+        nodes = generateNodes(nodes, nDSB, nChroms, chromLengths, cycleID)
         print("Total number of junctions in nucleus: %d\n" %len(nodes))
 
 
-        # assign breakpoint genetic positions
-        nodes = breakpointPos(nodes, batchIDX, nChroms, chromLengths)
-
-
         # define path ends
-        nodes = telomericJunctions(nodes)
+        nodes = generateTelomeres(nodes)
 
 
         if nDSB > 0:
@@ -1124,15 +1176,15 @@ def main():
 
 
             # mitosis phase
-            nodes = mitosis(nodes, pathList, count, delta, centromerePos)
+            nodes = mitosis(nodes, pathList, cycleID, delta, centromerePos)
 
 
             # open output file for writing SV data
-            analysis(nodes, count, dest, mu, lmbda, delta, chromLengths)
+            analysis(nodes, cycleID, dest, mu, lmbda, delta, chromLengths)
 
 
         else: print("Exception, no available junctions.")
-        count += 1
+        cycleID += 1
         pathList.clear()
     print(nodes)
     nodes.clear()
