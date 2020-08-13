@@ -150,7 +150,7 @@ class cirosPlot():
         coveredNodes = []
 
         # debugging
-        print("\nAnalysis - Duplications Error: ")
+        #print("\nAnalysis - Duplications Error:\n")
 
         for i in range(len(nodes)):
             nodeID = nodes[i].get("nodeID")
@@ -159,7 +159,7 @@ class cirosPlot():
             if nodes[i].get("type") == 'nonTel' and nodes[i].get("M") != 'none':
 
                 # debugging
-                print("Node causing error: %s" %nodes[i])
+                # print("Node causing error: %s" %nodes[i])
 
 
                 AdjacentID = nodes[ int(nodes[i].get("WT")) ].get("nodeID")
@@ -289,9 +289,8 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,eventID):
 
         nbp_per_chrom[chrIndex][hapIndex] = nbp_per_chrom[chrIndex][hapIndex] + 1
 
-    print(len(nbp_per_chrom))
-    print(nbp_per_chrom)
-
+    #print(len(nbp_per_chrom))
+    #print(nbp_per_chrom)
 
     uniqueID = len(nodes)
     hapChoice = [0,1]
@@ -325,10 +324,11 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,eventID):
             "inv":         False,
         }
         nodes.append(nodeData)
+        uniqueID += 1
 
         nodeData = {
             # identification:
-            "nodeID":    uniqueID + 1,
+            "nodeID":    uniqueID,
             "chromID":   chromosomeTarget,
             "haplotype": haplotype[0],
             "position":  breakpointPos,
@@ -344,9 +344,7 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,eventID):
             "inv":         False,
         }
         nodes.append(nodeData)
-
-        # update for next append pair
-        uniqueID += 2
+        uniqueID += 1
 
 
     # determine copy number location
@@ -374,7 +372,7 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,eventID):
 
             # try different cnIDs, pick randomly between the ones that exist
             else:
-                print("number of prev junctions: %s" %nbp_per_chrom[nodes[i].get("chromID")-1][nodes[i].get("haplotype")])
+                #print("number of prev junctions: %s" %nbp_per_chrom[nodes[i].get("chromID")-1][nodes[i].get("haplotype")])
                 for j in cnidList:
 
                     # set index coords every cnID attempt
@@ -390,11 +388,11 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,eventID):
                         if AdjID == np.pi:
                             nodeID = i+1
                         else:
-                            print("node %s exists" %AdjID)
+                            #print("node %s exists" %AdjID)
                             cnidChoice.append( (j, nodes[AdjID].get("cn")) )
                             break # prevents repeat assignment
 
-                
+
                 # choose random cnid location from available segments
                 idxChoice = int(np.random.choice( [i for i in range(len(cnidChoice))], 1))
                 cnRef     = cnidChoice[idxChoice]
@@ -450,12 +448,11 @@ def findAdjacentJunction(nodes,nodeID):
     connection.haplo = nodes[nodeID].get("haplotype")
 
     # debugging
-    print("\nConnection information: current junction information:")
-    print(connection.id_, location, nodes[nodeID].get("type"), direction, connection.chrom, connection.cnid, connection.haplo)
-    print(nodes[nodeID])
+    #print("\nConnection information: current junction information:")
+    #print(connection.id_, location, nodes[nodeID].get("type"), direction, connection.chrom, connection.cnid, connection.haplo)
+    #print(nodes[nodeID])
 
-# and nodes[i].get("cn") > 0                                    \
-# and nodes[i].get("cn") == connection.cn                       \
+
     # locates junctions along the chromosome in LR direction
     for i in range(len(nodes)):
         if nodes[i].get("chromID") == connection.chrom                    \
@@ -474,7 +471,7 @@ def findAdjacentJunction(nodes,nodeID):
     # sorts list of potential junctions
     if len(rightAdjNodes) > 0:
         rightAdjNodes.sort(key = lambda x:x['position'])
-        print("RADJnodes: %s" %rightAdjNodes)
+        #print("RADJnodes: %s" %rightAdjNodes)
 
         # only telomere available
         if len(rightAdjNodes) == 1:
@@ -493,7 +490,7 @@ def findAdjacentJunction(nodes,nodeID):
     # sorts list of potential junctions
     elif len(leftAdjNodes) > 0:
         leftAdjNodes.sort(key = lambda x:x['position'], reverse = True)
-        print("lADJnodes: %s" %leftAdjNodes)
+        #print("lADJnodes: %s" %leftAdjNodes)
 
         # only telomere available
         if len(leftAdjNodes) == 1:
@@ -517,7 +514,7 @@ def findAdjacentJunction(nodes,nodeID):
 
 
 def g1(nodes, lmbda):
-
+    print('\nEntering G1\n')
     # list available wild type connections
     lWT = []
     for i in range(len(nodes)):
@@ -799,6 +796,9 @@ def unconnectedPathConstruction(nodes):
 
 
 def syn_g2(nodes, pathList, telomeric, nonTelomeric):
+    print('\nEntering S, G2\n')
+
+    # lists for copied junctions
     telomericCopied    = [[] for i in range(len(telomeric))]
     nonTelomericCopied = [[] for i in range(len(nonTelomeric))]
 
@@ -1075,6 +1075,7 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
 
 
 def mitosis(nodes, pathList, cycleID, delta, centromerePos):
+    print('\nEntering M\n')
 
     for i in range(len(pathList)):
         daughterCell = int(random.randint(0,1))
