@@ -1065,18 +1065,10 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
                 pos = random.randint(jPos, nodes[connID].get("position"))
 
 
-        # assigning subpaths to daughter cells
-        if nCent == 2:
-            # subpaths assigned to different daughters - deleted or kept
-            copynumber_1 = 0
-            copynumber_2 = nodes[nodeChoice].get("cn")
-
-        elif nCent > 2:
-            # stochastic assignment of each path
-
         # appending new breakpoints to nodes
+        uniqueID = len(nodes)
         nodes.append({
-            "nodeID":    len(nodes),
+            "nodeID":    uniqueID,
             "chromID":   jChrom,
             "haplotype": nodes[nodeChoice].get("haplotype"),
             "position":  pos,
@@ -1091,7 +1083,7 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
             "inv":         False,
         })
         nodes.append({
-            "nodeID":    len(nodes),
+            "nodeID":    uniqueID+1,
             "chromID":   jChrom,
             "haplotype": nodes[nodeChoice].get("haplotype"),
             "position":  pos,
@@ -1105,6 +1097,63 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
             "centromeric": False,
             "inv":         False,
         })
+
+
+        # connect new junctions to path
+        if segType == 'pTel':
+            # segment becomes non telomeric as pos < jPos
+            nodes[nodeChoice]["type"] = 'nonTel'
+            nodes[nodeChoice]["WT"]   = str(uniqueID+1)
+
+            # new WT connection
+            nodes[uniqueID+1]["type"] = 'nonTel'
+            nodes[uniqueID+1]["WT"]   = str(nodeID)
+
+            # (new) telomeric segment unconnected
+            nodes[uniqueID]["type"]        = 'pTel'
+            nodes[uniqueID]["WT"]          = 'none'
+            nodes[uniqueID]["M"]           = 'none'
+            nodes[uniqueID]["centromeric"] = True
+
+        elif segType == 'qTel':
+            # segment becomes non telomeric as pos > jPos
+            nodes[nodeChoice]["type"] = 'nonTel'
+            nodes[nodeChoice]["WT"]   = str(uniqueID)
+
+            # new WT connection
+            nodes[uniqueID]["type"]   = 'nonTel'
+            nodes[uniqueID]["WT"]     = str(nodeID)
+
+            # (new) telomeric segment unconnected
+            nodes[uniqueID+1]["type"]        = 'qTel'
+            nodes[uniqueID+1]["WT"]          = 'none'
+            nodes[uniqueID+1]["M"]           = 'none'
+            nodes[uniqueID+1]["centromeric"] = True
+
+        elif segType == 'nonTel':
+            connID = int(nodes[nodeChoice].get("WT"))
+
+            if jPos > nodes[connID].get("position"):
+                nodes[connID]["WT"]     = str(uniqueID)
+                nodes[uniqueID]["WT"]   = str(connID)
+
+                nodes[uniqueID+1]["WT"] = str(nodeChoice)
+                nodes[nodeChoice]["WT"] = str(uniqueID+1)
+
+            elif jPos < nodes[connID].get("position"):
+                nodes[connID]["WT"]     = str(uniqueID+1)
+                nodes[uniqueID+1]["WT"] = str(connID)
+
+                nodes[uniqueID]["WT"]   = str(nodeChoice)
+                nodes[nodeChoice]["WT"] = str(uniqueID)
+
+            # leave centromere assignment for next cell cycle
+
+
+        # define subpaths
+        subPaths = [ [] for i in range(nCent)]
+        
+
 
     return nodes
 
