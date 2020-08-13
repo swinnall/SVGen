@@ -281,9 +281,13 @@ def generateDSBs(mu):
 def generateNodes(nodes,nDSB,nChroms,chromLengths,eventID):
 
     # determine nbp on each chromosome prior to additional assignment; if 0 then cn = 1; else: call check func later
-    nbp_per_chrom = [ 0 for i in range(nChroms)]
+    # stores number of break points per chrom (row) for each haplotype (column)
+    nbp_per_chrom = [ [0,0] for i in range(nChroms)]
     for i in range(len(nodes)):
-        nbp_per_chrom[nodes[i].get("chromID")-1] = nbp_per_chrom[nodes[i].get("chromID")-1] + 1
+        hapIndex = nodes[i].get("haplotype")
+        chrIndex = nodes[i].get("chromID")-1
+
+        nbp_per_chrom[chrIndex][hapIndex] = nbp_per_chrom[chrIndex][hapIndex] + 1
 
     print(len(nbp_per_chrom))
     print(nbp_per_chrom)
@@ -345,7 +349,7 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,eventID):
         uniqueID += 2
 
 
-    # check copy number location
+    # determine copy number location
     if eventID == 0:
         for i in range(len(nodes)):
             nodes[i]["cnID"] = 1
@@ -362,7 +366,7 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,eventID):
         for i in range(nThreshold, len(nodes), 2):
 
             # if no breaks on a chromosome then it has cn = 1
-            if nbp_per_chrom[nodes[i].get("chromID")-1] == 0:
+            if nbp_per_chrom[nodes[i].get("chromID")-1][nodes[i].get("haplotype")] == 0:
                 nodes[i]["cnID"]   = 1
                 nodes[i]["cn"]     = 1
                 nodes[i+1]["cnID"] = 1
@@ -370,6 +374,7 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,eventID):
 
             # try different cnIDs, pick randomly between the ones that exist
             else:
+                print("number of prev junctions: %s" %nbp_per_chrom[nodes[i].get("chromID")-1][nodes[i].get("haplotype")])
                 for j in cnidList:
 
                     # set index coords every cnID attempt
@@ -381,21 +386,26 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,eventID):
                     for k in range(2):
 
                         AdjID = findAdjacentJunction(nodes,nodeID)
-                        print(AdjID)
-                        
+
                         if AdjID == np.pi:
                             nodeID = i+1
                         else:
-                            cnidChoice.append(j)
-                            break # prevents repeat assignment of j
+                            print("node %s exists" %AdjID)
+                            cnidChoice.append( (j, nodes[AdjID].get("cn")) )
+                            break # prevents repeat assignment
 
-                # choose random cnid from available segments
-                nodes[i]["cnID"]   = int(np.random.choice(cnidChoice,1))
-                nodes[i+1]["cnID"] = int(np.random.choice(cnidChoice,1))
+                
+                # choose random cnid location from available segments
+                idxChoice = int(np.random.choice( [i for i in range(len(cnidChoice))], 1))
+                cnRef     = cnidChoice[idxChoice]
 
-                # call associated cn for segment
-                nodes[i]["cn"]   = max(cnidChoice)
-                nodes[i+1]["cn"] = max(cnidChoice)
+                # assign cnid
+                nodes[i]["cnID"]   = cnRef[0]
+                nodes[i+1]["cnID"] = cnRef[0]
+
+                # assign cn
+                nodes[i]["cn"]   = cnRef[1]
+                nodes[i+1]["cn"] = cnRef[1]
 
 
     # resets prev path information
