@@ -984,7 +984,7 @@ def checkInv(nodes, pathList):
         for j in range(len(pathList.get(str(i)))):
             nodeID = pathList.get(str(i))[j]
 
-            if nodes[ int(nodes[nodeID].get("M")) ].get("side") == 0 and nodes[nodeID].get("cn") > 0: # and j != 0:
+            if nodes[ int(nodes[nodeID].get("M")) ].get("side") == 0 and nodes[nodeID].get("cn") > 0:
                 nodes[nodeID]["inv"] = True
             else: pass
 
@@ -993,47 +993,39 @@ def checkInv(nodes, pathList):
 
 def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
 
+    # a threshold variable
+    m = 0
+
+    # segment options for breakpoints
+    options = []
+
     # nCent - 1 = number of breakpoints
     for j in range(nCent-1):
 
-        daughterCell = int(random.randint(0,1))
-        if daughterCell == 1:
-            pass
-        else:
-            marker = 0
-            for k in range(marker, len(pathList.get(str(i))), 1):
-
-                nodes[ pathList.get(str(i))[j] ]["cn"] = 0
-
-                if k == centList[j]:
-                    marker = k
-                    break
-                else: pass
-            break
-
-        m = 0
-        cycleID = 0
-        options = []
         for k in range(m, len(pathList.get(str(i))), 1):
             nodeID = pathList.get(str(i))[k]
 
+            # appends first centromeric node
             if nodeID == centList[j] and len(options) == 0:
                 options.append(nodeID)
 
-            elif k != centList[j] and cycleID == 1:
+            # appends nodes between centromeres
+            elif nodeID != centList[j] and len(options) != 0:
                 options.append(nodeID)
 
+            # appends second centromeric node, ending options
             elif nodeID == centList[j] and len(options) != 0:
                 options.append(nodeID)
+                # m becomes start point for next breakpoint
                 m = k
                 break
 
-            else: pass
 
-        # choosing segment to break
+        # choosing segment to insert breakpoint
         nodeChoice = int(np.random.choice(options,1))
         print("\noptions: %s" %options)
         print("decision: %s" %nodeChoice)
+
 
         # positional information
         jPos    = nodes[nodeChoice].get("position")
@@ -1044,14 +1036,13 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
         print("key: nodeID, junction position, chromosome, type, centromere position")
         print("%s %s %s %s %s" %(nodeChoice, jPos, jChrom, segType, centPos))
 
-        # choosing breakpoint position
-        if segType == 'pTel':
 
+        # choosing breakpoint position given the segment type
+        if segType == 'pTel':
             pos = random.randint(centPos, jPos)
 
 
         elif segType == 'qTel':
-
             pos = random.randint(jPos, centPos)
 
 
@@ -1074,10 +1065,19 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
                 pos = random.randint(jPos, nodes[connID].get("position"))
 
 
+        # assigning subpaths to daughter cells
+        if nCent == 2:
+            # subpaths assigned to different daughters - deleted or kept
+            copynumber_1 = 0
+            copynumber_2 = nodes[nodeChoice].get("cn")
+
+        elif nCent > 2:
+            # stochastic assignment of each path
+
         # appending new breakpoints to nodes
         nodes.append({
             "nodeID":    len(nodes),
-            "chromID":   nodes[nodeChoice].get("chromID"),
+            "chromID":   jChrom,
             "haplotype": nodes[nodeChoice].get("haplotype"),
             "position":  pos,
             "side":      0,
@@ -1092,7 +1092,7 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
         })
         nodes.append({
             "nodeID":    len(nodes),
-            "chromID":   nodes[nodeChoice].get("chromID"),
+            "chromID":   jChrom,
             "haplotype": nodes[nodeChoice].get("haplotype"),
             "position":  pos,
             "side":      1,
@@ -1123,9 +1123,7 @@ def mitosis(nodes, pathList, cycleID, delta, centromerePos):
             for j in range(len(pathList.get(str(i)))):
                 nodeID  = pathList.get(str(i))[j]
 
-                if daughterCell == 1:
-                    pass
-                elif daughterCell == 0:
+                if daughterCell == 0:
                     nodes[nodeID]["cn"] = 0
 
         # balanced assignment
@@ -1135,16 +1133,17 @@ def mitosis(nodes, pathList, cycleID, delta, centromerePos):
         # breakage
         elif nCent > 1:
 
+            # introduces multiple breaks
             if cycleID < delta-1:
                 nodes = cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos)
+
+            # can't leave unconnected junctions in system at final analysis so set whole paths
             elif cycleID == delta-1:
 
                 for j in range(len(pathList.get(str(i)))):
                     nodeID  = pathList.get(str(i))[j]
 
-                    if daughterCell == 1:
-                        pass
-                    elif daughterCell == 0:
+                    if daughterCell == 0:
                         nodes[nodeID]["cn"] = 0
 
     return nodes
