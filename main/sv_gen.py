@@ -1000,6 +1000,9 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
     # subpath start list
     subPathStartList = []
 
+    # list of introduced junctions
+    newJuncList = []
+
     # a threshold variable
     m = 0
 
@@ -1110,14 +1113,11 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
             "centromeric": False,
             "inv":         nodes[nodeChoice].get("inv"),
         })
-
+        newJuncList.append(uniqueID)
+        newJuncList.append(uniqueID+1)
 
         # connect new junctions to path
         if segType == 'pTel':
-            # assuming doesn't end on pTel ...
-            subPathStartList.append(uniqueID)
-            subPathStartList.append(uniqueID+1)
-
             # segment becomes non telomeric as pos < jPos
             nodes[nodeChoice]["type"] = 'nonTel'
             nodes[nodeChoice]["WT"]   = str(uniqueID+1)
@@ -1133,9 +1133,6 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
             nodes[uniqueID]["centromeric"] = True
 
         elif segType == 'qTel':
-            # assuming doesn't start from qTel.. oh dear
-            subPathStartList.append(uniqueID+1)
-
             # segment becomes non telomeric as pos > jPos
             nodes[nodeChoice]["type"] = 'nonTel'
             nodes[nodeChoice]["WT"]   = str(uniqueID)
@@ -1151,7 +1148,6 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
             nodes[uniqueID+1]["centromeric"] = True
 
         elif segType == 'nonTel':
-            subPathStartList.append(uniqueID+1)
             connID = int(nodes[nodeChoice].get("WT"))
 
             if jPos > nodes[connID].get("position"):
@@ -1173,8 +1169,40 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
 
     ## end of introducing breakpoints
     # define subpaths:
-    subPaths = [ [] for i in range(nCent)]
+    subPaths = []
+    temp     = []
+    # populating list of list from the newly introduced junctions
+    # order does not matter as this is only for changing cn
+    for ele in newJuncList:
 
+        subPathCondition = True
+        while subPathCondition:
+
+            # check next connection (only WT)
+            if nodes[nodeID].get("WT") != 'none':
+                nodeID = int(nodes[nodeID].get("WT"))
+                temp.append(nodeID)
+
+                # check next connection (M)
+                if nodes[nodeID].get("M") != 'none':
+                    nodeID = int(nodes[nodeID].get("M"))
+                    temp.append(nodeID)
+
+                # if no mutant connection, reached other junction
+                else:
+                    subPathCondition = False
+
+            # no wild type; junction is telomeric
+            else:
+                # check
+                telCondition = CheckBool.TelCheck(nodes,nodeID)
+                if telCondition == True:
+                    print("junction not telomeric but does not have WT")
+                    sys.exit()
+
+                subPathCondition = False
+
+        subPaths.append(temp)
 
     ## decide mitotic assignment and iterate along subpaths to delete
     if nCent == 2:
@@ -1196,7 +1224,7 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
 
                     if daughterCell == 0:
                         nodes[nodeID]["cn"] = 0
-        
+
     return nodes
 
 
