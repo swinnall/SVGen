@@ -1114,6 +1114,7 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
 
         # connect new junctions to path
         if segType == 'pTel':
+            # assuming doesn't end on pTel ...
             subPathStartList.append(uniqueID)
             subPathStartList.append(uniqueID+1)
 
@@ -1132,7 +1133,7 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
             nodes[uniqueID]["centromeric"] = True
 
         elif segType == 'qTel':
-            # assuming 
+            # assuming doesn't start from qTel.. oh dear
             subPathStartList.append(uniqueID+1)
 
             # segment becomes non telomeric as pos > jPos
@@ -1175,9 +1176,27 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
     subPaths = [ [] for i in range(nCent)]
 
 
+    ## decide mitotic assignment and iterate along subpaths to delete
+    if nCent == 2:
 
-    # assign subpaths:
+        # randomly chooses which subpath is being assigned to 0 (deleted)
+        subChoice = int(random.randint(0,1))
 
+        # deletes subpath
+        for q in range( len( subPaths[subChoice] ) ):
+            nodeID = subPaths[subChoice][q]
+            nodes[nodeID]["cn"] = 0
+
+    elif nCent > 2:
+        for p in range(len(subPaths)):
+            daughterCell = int(random.randint(0,1))
+
+            for q in range( len( subPaths[p] ) ):
+                nodeID  = subPaths[p][q]
+
+                    if daughterCell == 0:
+                        nodes[nodeID]["cn"] = 0
+        
     return nodes
 
 
