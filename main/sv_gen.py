@@ -1024,8 +1024,8 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
 
                 # debugging:
                 print("\ncentList: %s\n " %centList)
-                print("target 1st centromere %s" %centList[m])
-                print("target 2nd centromere %s" %centList[m+1])
+                print("target 1st centromere %s" %centList[n])
+                print("target 2nd centromere %s" %centList[n+1])
 
             # appends nodes between centromeres
             elif nodeID != centList[n+1] and len(options) != 0:
@@ -1179,6 +1179,7 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
         temp   = []
         temp.append(ele)
         nodeID = ele
+        print("newJuncStart: %s" %ele)
 
         subPathCondition = True
         while subPathCondition:
@@ -1189,7 +1190,7 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
                 temp.append(nodeID)
 
                 # debugging
-                print(nodes[nodeID].get("WT"))
+                print("Next connection (WT): %s" %nodes[nodeID].get("WT"))
 
                 # check next connection (M)
                 if nodes[nodeID].get("M") != 'none':
@@ -1197,7 +1198,7 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
                     temp.append(nodeID)
 
                     # debugging
-                    print(nodes[nodeID].get("M"))
+                    print("Next connection (M): %s" %nodes[nodeID].get("M"))
 
                 # if no mutant connection, reached other junction
                 else:

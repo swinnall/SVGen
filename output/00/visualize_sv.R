@@ -2,8 +2,7 @@
 library(circlize)
 library(tidyverse)
 
-#setwd("/Users/samuelwinnall/Documents/UCL/Thesis/Modelling/Current/output")
-setwd("/Users/samuelwinnall/Documents/UCL/Thesis/Modelling/Current/archive/testing")
+setwd("/Users/samuelwinnall/Documents/Github/sv-model/output/00")
 
 get_SV <- function(fname){
   svs = read_tsv(fname)
@@ -17,25 +16,25 @@ get_SV <- function(fname){
   sv.second <- svs %>% select(chr=chr2, start=coord2) %>% as.data.frame()
   sv.second$chr = paste0("chr", sv.second$chr)
   sv.second$end = sv.second$start
-  
+
   return(list(svs = svs, sv.first=sv.first, sv.second=sv.second))
 }
 
 get_CN <- function(fname, cutoff = 5*10e4){
   cns = read_tsv(fname)
-  
+
   cns$chr = paste0("chr", cns$chr)
-  
-  cns %>% select(chr, start, end, cn, cycleID) -> cnbed
+
+  cns %>% select(chr, start, end, cn, cycleNum) -> cnbed
   unique(cns$cn)
   summary(cnbed$end-cnbed$start)
-  
+
   #cnbed %>% filter(value1 + value2 != 1)  %>% filter(end-start > cutoff) -> cnsel
   cnbed %>% filter(end-start > cutoff) -> cnsel
   str(cnsel)
-  
+
   unique(cnsel$cn)
-  
+
   return(cnsel)
 }
 
@@ -49,20 +48,20 @@ plot_SV <- function(fname){
   pa <- c("#377eb8","#d95f02","#33a02c")
   names(pa) <- c("DEL","INS","INV")
   col <- pa[svs$SVTYPE]
-  
-  
-  for(i in 0:(tail(svs,n=1)[1,"cycleID"])) {
-    
+
+
+  for(i in 0:(tail(svs,n=1)[1,"cycleNum"])) {
+
     fname <- paste0("sv_data_", i, ".tsv")
     outfile <- str_replace(fname, ".tsv", ".png")
     name <- ""
     png(outfile, height=600, width=600)
-    
+
     print(sv.first)
     circos.initializeWithIdeogram(species="hg38")
-    circos.genomicLink(sv.first[svs$cycleID==i,], sv.second[svs$cycleID==i,], col=col[svs$cycleID==i])
+    circos.genomicLink(sv.first[svs$cycleNum==i,], sv.second[svs$cycleNum==i,], col=col[svs$cycleNum==i])
     circos.clear()
-    
+
     title(name)
     dev.off()
   }
@@ -70,7 +69,7 @@ plot_SV <- function(fname){
 
 
 plot_CN_SV <- function(fsv, fcnv){
-  
+
   # get CN data
   cnsel = get_CN(fcnv)
 
@@ -79,36 +78,36 @@ plot_CN_SV <- function(fsv, fcnv){
   #  cols = c("#6283A9","#bdd7e7","#f0f0f0","#FCAE91", "#B9574E", "#76000D", "#3b0107")
   #  col_fun = colorRamp2(breaks = seq(0:6)-1, colors = cols)
 
-  # haploid genome 
+  # haploid genome
   cols = c("#6283A9","#f0f0f0", "#B9574E", "#3b0107")
   col_fun = colorRamp2(breaks = seq(0:3)-1, colors = cols)
-  
+
   # get SV data
   res = get_SV(fsv)
   svs = res$svs
   sv.first = res$sv.first
   sv.second = res$sv.second
-  
+
   # SV colors
   pa <- c("#377eb8","#d95f02","#33a02c")
   names(pa) <- c("DEL","INS","INV")
   col <- pa[svs$SVTYPE]
-  
-  
-  for(i in 0:(tail(cnsel$cycleID,1))) {
-    
+
+
+  for(i in 0:(tail(cnsel$cycleNum,1))) {
+
     fname <- paste0("cn_sv_data_", i, ".tsv")
     outfile <- str_replace(fname, ".tsv", ".png")
     name <- ""
     png(outfile, height=600, width=600)
-    
+
     circos.initializeWithIdeogram(species="hg38")
-    
-    #print(cnsel[cnsel$cycleID==i,])
-    circos.genomicHeatmap(cnsel[cnsel$cycleID==i,], col = col_fun, side = "inside", border = "white")
-    circos.genomicLink(sv.first[svs$cycleID==i,], sv.second[svs$cycleID==i,], col=col[svs$cycleID==i])
+
+    #print(cnsel[cnsel$cycleNum==i,])
+    circos.genomicHeatmap(cnsel[cnsel$cycleNum==i,], col = col_fun, side = "inside", border = "white")
+    circos.genomicLink(sv.first[svs$cycleNum==i,], sv.second[svs$cycleNum==i,], col=col[svs$cycleNum==i])
     circos.clear()
-    
+
     title(name)
     dev.off()
   }
@@ -120,4 +119,3 @@ plot_SV(fsv)
 
 fcnv = "cn_data.tsv"
 plot_CN_SV(fsv, fcnv)
-
