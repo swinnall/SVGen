@@ -253,17 +253,19 @@ class CheckBool():
 
         tally    = 0
         centList = []
-
+        print('\nnext cent list info: ')
         for j in range(len(pathList.get(str(i)))):
             nodeID = pathList.get(str(i))[j]
 
             if nodes[nodeID].get("centromeric") == True and nodes[nodeID].get("type") != 'nonTel':
                 tally += 1
+                print(tally)
                 centList.append(nodeID)
 
-            # nonTel types are counted twice for the same centromere
+            # nonTel types have two junctions referring to the same centromere
             elif nodes[nodeID].get("centromeric") == True and nodes[nodeID].get("type") == 'nonTel':
                 tally += 0.5
+                print(tally)
                 centList.append(nodeID)
 
         nCent = tally
@@ -997,17 +999,18 @@ def checkInv(nodes, pathList):
 
 def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
 
-    # subpath start list
-    subPathStartList = []
-
     # list of introduced junctions
     newJuncList = []
 
-    # a threshold variable
+    # a threshold variable for iterating along PathList
     m = 0
 
+    # a threshold variable for iterating along centList
+    n = 0
+
     # nCent - 1 = number of breakpoints
-    for j in range(nCent-1):
+    print('\n\n %s \n\n' %nCent)
+    for j in range(int(nCent)-1):
 
         # segment options for breakpoints
         options = []
@@ -1016,24 +1019,24 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
             nodeID = pathList.get(str(i))[k]
 
             # appends first centromeric node
-            if nodeID == centList[j] and len(options) == 0:
+            if nodeID == centList[n] and len(options) == 0:
                 options.append(nodeID)
 
-                # subpath always starts from telomere,
-                # if 1st centromere is not a telomeric segment then append
-                # if it is telomeric then it will be appended naturally later
-                if nodes[nodeID].get("type") == nonTel:
-                    subPathStartList.append(pathList.get(str(i))[0])
+                # debugging:
+                print("\ncentList: %s\n " %centList)
+                print("target 1st centromere %s" %centList[m])
+                print("target 2nd centromere %s" %centList[m+1])
 
             # appends nodes between centromeres
-            elif nodeID != centList[j+1] and len(options) != 0:
+            elif nodeID != centList[n+1] and len(options) != 0:
                 options.append(nodeID)
 
             # appends second centromeric node, ending options
-            elif nodeID == centList[j+1] and len(options) != 0:
+            elif nodeID == centList[n+1] and len(options) != 0:
                 options.append(nodeID)
                 # m becomes start point for next breakpoint
                 m = k+1
+                n = n+2
                 break
 
 
@@ -1124,7 +1127,7 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
 
             # new WT connection
             nodes[uniqueID+1]["type"] = 'nonTel'
-            nodes[uniqueID+1]["WT"]   = str(nodeID)
+            nodes[uniqueID+1]["WT"]   = str(nodeChoice)
 
             # (new) telomeric segment unconnected
             nodes[uniqueID]["type"]        = 'pTel'
@@ -1166,14 +1169,16 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
 
             # leave centromere assignment for next cell cycle
 
-
+    print("\nEntering subpath construction\npath: %s\n" %pathList.get(str(i)))
     ## end of introducing breakpoints
     # define subpaths:
     subPaths = []
-    temp     = []
     # populating list of list from the newly introduced junctions
     # order does not matter as this is only for changing cn
     for ele in newJuncList:
+        temp   = []
+        temp.append(ele)
+        nodeID = ele
 
         subPathCondition = True
         while subPathCondition:
@@ -1183,10 +1188,16 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
                 nodeID = int(nodes[nodeID].get("WT"))
                 temp.append(nodeID)
 
+                # debugging
+                print(nodes[nodeID].get("WT"))
+
                 # check next connection (M)
                 if nodes[nodeID].get("M") != 'none':
                     nodeID = int(nodes[nodeID].get("M"))
                     temp.append(nodeID)
+
+                    # debugging
+                    print(nodes[nodeID].get("M"))
 
                 # if no mutant connection, reached other junction
                 else:
@@ -1197,12 +1208,15 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
                 # check
                 telCondition = CheckBool.TelCheck(nodes,nodeID)
                 if telCondition == True:
-                    print("junction not telomeric but does not have WT")
+                    print("error: junction not telomeric but does not have WT")
                     sys.exit()
 
                 subPathCondition = False
-
+        print("temp: %s" %temp)
         subPaths.append(temp)
+
+    print('Subpaths: ')
+    print(subPaths)
 
     ## decide mitotic assignment and iterate along subpaths to delete
     if nCent == 2:
@@ -1222,8 +1236,8 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
             for q in range( len( subPaths[p] ) ):
                 nodeID  = subPaths[p][q]
 
-                    if daughterCell == 0:
-                        nodes[nodeID]["cn"] = 0
+                if daughterCell == 0:
+                    nodes[nodeID]["cn"] = 0
 
     return nodes
 
