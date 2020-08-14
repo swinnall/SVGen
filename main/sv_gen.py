@@ -287,6 +287,14 @@ def generateDSBs(mu):
 def generateNodes(nodes,nDSB,nChroms,chromLengths,firstEvent):
     print("\nEntering node generation\n")
 
+    # reset prev path information
+    for i in range(len(nodes)):
+        if  nodes[i].get("cn") > 0:
+            nodes[i]["type"]        = 'nonTel'
+            nodes[i]["WT"]          = 'none'
+            nodes[i]["centromeric"] = False
+            nodes[i]["inv"]         = False
+
     # determine nbp on each chromosome prior to additional assignment; if 0 then cn = 1; else: call check func later
     # stores number of break points per chrom (row) for each haplotype (column)
     nbp_per_chrom = [ [0,0] for i in range(nChroms)]
@@ -297,8 +305,8 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,firstEvent):
         nbp_per_chrom[chrIndex][hapIndex] = nbp_per_chrom[chrIndex][hapIndex] + 1
 
     # print bp information
-    #print(len(nbp_per_chrom))
-    #print(nbp_per_chrom)
+    # print(len(nbp_per_chrom))
+    # print(nbp_per_chrom)
 
     # local definitions
     uniqueID = len(nodes)
@@ -437,13 +445,7 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,firstEvent):
                 print("chosen cnID = %s" %cnRef[0])
                 print("chosen cn   = %s" %cnRef[1])
 
-    # reset prev path information
-    for i in range(len(nodes)):
-        if  nodes[i].get("cn") > 0:
-            nodes[i]["type"]        = 'nonTel'
-            nodes[i]["WT"]          = 'none'
-            nodes[i]["centromeric"] = False
-            nodes[i]["inv"]         = False
+
 
     return nodes
 
@@ -453,15 +455,21 @@ def generateTelomeres(nodes):
 
     for i in range(len(nodes)):
         nodeID = nodes[i].get("nodeID")
+        print("scanning: %s" %nodeID)
 
         direction = nodes[nodeID].get("side")
         adjID = findAdjacentJunction(nodes,nodeID)
 
         if adjID == np.pi and direction == 1:
             nodes[nodeID]["type"] = 'qTel'
+            print("qTel: %s" %nodeID)
 
         elif adjID == np.pi and direction == 0:
             nodes[nodeID]["type"] = 'pTel'
+            print("pTel: %s" %nodeID)
+
+        else:
+            print("nonTel: %s" %nodeID)
 
     return nodes
 
@@ -560,10 +568,12 @@ def g1(nodes, lmbda):
     if len(lWT) > 0:
         WTcondition = True
     else: WTcondition = False
+
     print('WT Connections')
     print("Debug Key: nodeID, position, type, side, chromID, cnID, cn, haplo")
-    cc = 0
+
     # generate WT connections
+    cc = 0
     while WTcondition:
 
         nodeID = int(np.random.choice(lWT, 1))
@@ -858,9 +868,9 @@ def syn_g2(nodes, pathList, telomeric, nonTelomeric):
                 "cn":        nodes[nodeID].get("cn"),
                 "cnID":      nodes[nodeID].get("cn"),
 
-                "type":        nodes[nodeID].get("type"),
-                "WT":          '',
-                "M":           '',
+                "type":      nodes[nodeID].get("type"),
+                "WT":        '',
+                "M":         '',
 
                 "centromeric": nodes[nodeID].get("centromeric"),
                 "inv":         False,
@@ -1225,19 +1235,20 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
         # randomly chooses which subpath is being assigned to 0 (deleted)
         subChoice = int(random.randint(0,1))
 
-        # deletes subpath
+        # deletes chosen subpath
         for q in range( len( subPaths[subChoice] ) ):
             nodeID = subPaths[subChoice][q]
             nodes[nodeID]["cn"] = 0
 
     elif nCent > 2:
+
         for p in range(len(subPaths)):
             daughterCell = int(random.randint(0,1))
 
             for q in range( len( subPaths[p] ) ):
-                nodeID  = subPaths[p][q]
 
                 if daughterCell == 0:
+                    nodeID = subPaths[p][q]
                     nodes[nodeID]["cn"] = 0
 
     return nodes
@@ -1266,20 +1277,8 @@ def mitosis(nodes, pathList, cycleID, delta, centromerePos):
 
         # breakage
         elif nCent > 1:
-
-            # introduces multiple breaks
-            if cycleID < delta-1:
-                nodes = cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos)
-
-            # can't leave unconnected junctions in system at final analysis so set whole paths
-            elif cycleID == delta-1:
-
-                for j in range(len(pathList.get(str(i)))):
-                    nodeID  = pathList.get(str(i))[j]
-
-                    if daughterCell == 0:
-                        nodes[nodeID]["cn"] = 0
-
+            nodes = cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos)
+            
     return nodes
 
 
