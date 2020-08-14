@@ -119,7 +119,7 @@ def main():
 
 
     # run simulation N times
-    N = 1000
+    N = 10000
     for i in range(N):
 
         # generate SVs

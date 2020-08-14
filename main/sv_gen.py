@@ -1142,7 +1142,7 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
 
             # new WT connection
             nodes[uniqueID]["type"]   = 'nonTel'
-            nodes[uniqueID]["WT"]     = str(nodeID)
+            nodes[uniqueID]["WT"]     = str(nodeChoice)
 
             # (new) telomeric segment unconnected
             nodes[uniqueID+1]["type"]        = 'qTel'
@@ -1190,7 +1190,7 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
                 temp.append(nodeID)
 
                 # debugging
-                print("Next connection (WT): %s" %nodes[nodeID].get("WT"))
+                print("Next connection (WT): %s" %nodeID)
 
                 # check next connection (M)
                 if nodes[nodeID].get("M") != 'none':
@@ -1198,7 +1198,7 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
                     temp.append(nodeID)
 
                     # debugging
-                    print("Next connection (M): %s" %nodes[nodeID].get("M"))
+                    print("Next connection (M): %s" %nodeID)
 
                 # if no mutant connection, reached other junction
                 else:
