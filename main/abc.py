@@ -19,6 +19,7 @@ import errno
 import sv_gen
 import matplotlib.pyplot as plt
 import pandas as pd
+import seaborn as sns
 
 
 def copy(src, dest):
@@ -33,7 +34,7 @@ def copy(src, dest):
 
 
 
-def readCN():
+def readCN(nChrom):
 
     # read SVGen copy number info
     r_cn_TSV = '../output/00' + '/cn_data.tsv'
@@ -41,7 +42,6 @@ def readCN():
 
 
     # define list of chromosomes
-    nChrom    = 22
     cnInfo = [ [] for i in range(nChrom)]
 
 
@@ -63,26 +63,30 @@ def readCN():
     par_df = pd.read_csv(r_par_TSV, sep="\t")
     mu    = par_df.iat[0,0]
     lmbda = par_df.iat[0,1]
-    delta = par_df.iat[0,2]
+    sigma = par_df.iat[0,2]
 
 
-    return cnInfo, mu, lmbda, delta
+    return cnInfo, mu, lmbda, sigma
 
 
 
-def genDist(cnInfo):
+def calcDistance(cnInfo, nChrom):
 
-    ## Generate Summary Statistics ##
-    nChrom  = 22
-    sumStat = [ [] for i in range(nChrom)]
+    ## Generate Summary Statistics from Criteria ##
+    nOscCriteria = 10
+    nbpCriteria  = 10
+    q = [[nOscCriteria, nbpCriteria] for i in range(nChrom)]
 
+
+    ## Generate Summary Statistics from Model ##
+    p = [ [] for i in range(nChrom)]
 
     # analyse each chromosome
     for i in range(nChrom):
 
         # determine number of breakpoints
         nbp = len(cnInfo[i])
-        sumStat[i].append(nbp)
+        p[i].append(nbp)
 
 
         # determine number of oscillating cn segments
@@ -92,49 +96,96 @@ def genDist(cnInfo):
 
                 if cnInfo[i][j][2] != cnInfo[i][j+1][2]:
                     nOscSeg += 1
-        sumStat[i].append(nOscSeg)
+        p[i].append(nOscSeg)
 
 
     ## Generate Distance ##
-    nOscCrit = 10
-    nbpCrit  = 10
+    d = [ [] for i in range(nChrom)]
 
-    d = 1
+    # for each chromosome generate the distance between each summary statistic
+    for i in range(nChrom):
+        x = 0
+        for j in range(len(p[i])):
+            x += (q[i][j] - p[i][j])**2
 
+        d[i].append( (x)**0.5 )
 
     return d
 
 
+def acceptReject(d, mu, lmbda, sigma, nChrom):
+    # scans d; if any chromosome is within acceptable range then simulation
+    # parameters and d are saved in memory
+
+    # chromCount = 1 is defined as canonical chromothripsis
+    # chromCount = 2-3+ is non canonical chromothripsis
+
+    outcome    = False
+    chromCount = 0
+    for i in range(nChrom):
+
+        if d[i][0] < 2:
+            chromCount += 1
+            outcome = True
+
+    #print("distance: %s" %d)
+    print("number of chromosomes affected: %s" %chromCount)
+    return outcome
+
+
+def analysis(mem):
+
+    dsbData = []
+    for i in range(len(mem)):
+        print(mem[i][1])
+        dsbData.append( mem[i][1] )
+
+    dsb_df = pd.DataFrame(dsbData, columns=['nDSB'])
+
+    sns_plot = sns.violinplot(y="nDSB", data=dsb_df)
+    plt.savefig("../output/00/violinplot.png")
+
+    return
+
 
 def main():
 
+    # define number of chromosomes
+    nChrom = 22
+
     # define memory matrix
     mem = []
-
 
     # ensure output file exists
     src  = '../input/00'
     dest = '../output/00'
     copy(src,dest)
 
-
     # run simulation N times
-    N = 10000
+    N = 1000
     for i in range(N):
 
         # generate SVs
         sv_gen.main()
 
         # read copy number info
-        cnInfo, mu, lmbda, delta = readCN()
+        cnInfo, mu, lmbda, sigma = readCN(nChrom)
 
         # generate distance to SS
-        d = genDist(cnInfo)
+        d = calcDistance(cnInfo, nChrom)
+
+        # determine validity of simulation
+        outcome = acceptReject(d, mu, lmbda, sigma, nChrom)
 
         # append simulation info to memory
-        mem.append( (d, mu, lmbda, delta) )
+        if outcome == True:
+            mem.append( (d, mu, lmbda, sigma) )
 
-    print(mem)
+    #print(mem)
+    print("number of accepted simulations: %s" %(len(mem)/N))
+
+    if len(mem) > 0:
+        analysis(mem)
     return
 
 

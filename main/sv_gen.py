@@ -278,8 +278,8 @@ class CheckBool():
 
 def generateDSBs(mu):
 
-    # nDSB = int( np.random.poisson(mu, 1) )
-    nDSB = int( random.randint(0,mu) )
+    nDSB = int( np.random.poisson(mu, 1) )
+    #nDSB = int( random.randint(0,mu) )
 
     return nDSB
 
@@ -419,10 +419,10 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,firstEvent):
                             cnidChoice.append( (j, nodes[adjID].get("cn"), nodes[nodeID].get("side"), nodes[adjID].get("side")) )
 
                             # debugging
-                            print("\nCurrent node:")
-                            print(nodes[nodeID].get("nodeID"), nodes[nodeID].get("position"), nodes[nodeID].get("type"), nodes[nodeID].get("side"), nodes[nodeID].get("chromID"), nodes[nodeID].get("cnID"), nodes[nodeID].get("cn"), nodes[nodeID].get("haplotype"))
-                            print("Adjacent node:")
-                            print(nodes[adjID].get("nodeID"), nodes[adjID].get("position"), nodes[adjID].get("type"), nodes[adjID].get("side"), nodes[adjID].get("chromID"), nodes[adjID].get("cnID"), nodes[adjID].get("cn"), nodes[adjID].get("haplotype"))
+                            #print("\nCurrent node:")
+                            #print(nodes[nodeID].get("nodeID"), nodes[nodeID].get("position"), nodes[nodeID].get("type"), nodes[nodeID].get("side"), nodes[nodeID].get("chromID"), nodes[nodeID].get("cnID"), nodes[nodeID].get("cn"), nodes[nodeID].get("haplotype"))
+                            #print("Adjacent node:")
+                            #print(nodes[adjID].get("nodeID"), nodes[adjID].get("position"), nodes[adjID].get("type"), nodes[adjID].get("side"), nodes[adjID].get("chromID"), nodes[adjID].get("cnID"), nodes[adjID].get("cn"), nodes[adjID].get("haplotype"))
 
                             break # prevents repeat assignment
 
@@ -442,8 +442,8 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,firstEvent):
                 nodes[i+1]["cn"] = cnRef[1]
 
                 # debugging
-                print("chosen cnID = %s" %cnRef[0])
-                print("chosen cn   = %s" %cnRef[1])
+                #print("chosen cnID = %s" %cnRef[0])
+                #print("chosen cn   = %s" %cnRef[1])
 
 
 
@@ -455,21 +455,22 @@ def generateTelomeres(nodes):
 
     for i in range(len(nodes)):
         nodeID = nodes[i].get("nodeID")
-        print("scanning: %s" %nodeID)
+        #print("scanning: %s" %nodeID)
 
         direction = nodes[nodeID].get("side")
         adjID = findAdjacentJunction(nodes,nodeID)
 
         if adjID == np.pi and direction == 1:
             nodes[nodeID]["type"] = 'qTel'
-            print("qTel: %s" %nodeID)
+            #print("qTel: %s" %nodeID)
 
         elif adjID == np.pi and direction == 0:
             nodes[nodeID]["type"] = 'pTel'
-            print("pTel: %s" %nodeID)
+            #print("pTel: %s" %nodeID)
 
         else:
-            print("nonTel: %s" %nodeID)
+            #print("nonTel: %s" %nodeID)
+            pass
 
     return nodes
 
@@ -570,10 +571,8 @@ def g1(nodes, lmbda):
     else: WTcondition = False
 
     print('WT Connections')
-    print("Debug Key: nodeID, position, type, side, chromID, cnID, cn, haplo")
 
     # generate WT connections
-    cc = 0
     while WTcondition:
 
         nodeID = int(np.random.choice(lWT, 1))
@@ -581,10 +580,11 @@ def g1(nodes, lmbda):
 
 
         # debugging
-        print("Current node:")
-        print(nodes[nodeID].get("nodeID"), nodes[nodeID].get("position"), nodes[nodeID].get("type"), nodes[nodeID].get("side"), nodes[nodeID].get("chromID"), nodes[nodeID].get("cnID"), nodes[nodeID].get("cn"), nodes[nodeID].get("haplotype"))
-        print("Adjacent node:")
-        print(nodes[adjID].get("nodeID"), nodes[adjID].get("position"), nodes[adjID].get("type"), nodes[adjID].get("side"), nodes[adjID].get("chromID"), nodes[adjID].get("cnID"), nodes[adjID].get("cn"), nodes[adjID].get("haplotype"))
+        #print("Debug Key: nodeID, position, type, side, chromID, cnID, cn, haplo")
+        #print("Current node:")
+        #print(nodes[nodeID].get("nodeID"), nodes[nodeID].get("position"), nodes[nodeID].get("type"), nodes[nodeID].get("side"), nodes[nodeID].get("chromID"), nodes[nodeID].get("cnID"), nodes[nodeID].get("cn"), nodes[nodeID].get("haplotype"))
+        #print("Adjacent node:")
+        #print(nodes[adjID].get("nodeID"), nodes[adjID].get("position"), nodes[adjID].get("type"), nodes[adjID].get("side"), nodes[adjID].get("chromID"), nodes[adjID].get("cnID"), nodes[adjID].get("cn"), nodes[adjID].get("haplotype"))
 
 
         # checks not connecting to telomere or repeated junctions
@@ -607,9 +607,6 @@ def g1(nodes, lmbda):
             WTcondition = True
         else: WTcondition = False
 
-        cc += 1
-        if cc == 20:
-            sys.exit()
 
     print('M Connections\n')
     # list available mutant connections
@@ -693,6 +690,7 @@ def generateCentromeres(nodes, centromerePos):
 
 
 def connectedPathConstruction(nodes,pathList):
+    print("Entering Path Construction - Connected")
 
     # locates all p telomeric junctions and sets as start of path
     pTel = []
@@ -772,6 +770,8 @@ def connectedPathConstruction(nodes,pathList):
 
 
 def unconnectedPathConstruction(nodes):
+    print("Entering Path Construction - Unconnected")
+
     unconnected  = []
     telomeric    = []
     nonTelomeric = []
@@ -798,15 +798,15 @@ def unconnectedPathConstruction(nodes):
             if nodes[nodeID].get("WT") != 'none':
                 nodeID = int(nodes[nodeID].get("WT"))
                 temp.append(nodeID)
-                print("WT Connection: %s" %nodeID)
-                print(nodes[nodeID])
+                #print("WT Connection: %s" %nodeID)
+                #print(nodes[nodeID])
 
                 # checks next connection (M)
                 if nodes[nodeID].get("M") != 'none':
                     nodeID = int(nodes[nodeID].get("M"))
                     temp.append(nodeID)
-                    print("M Connection: %s" %nodeID)
-                    print(nodes[nodeID])
+                    #print("M Connection: %s" %nodeID)
+                    #print(nodes[nodeID])
 
                 # if M == 'none': path ends on non-telomere
                 else: break
@@ -1019,7 +1019,7 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
     n = 0
 
     # nCent - 1 = number of breakpoints
-    print('\n\n %s \n\n' %nCent)
+    #print('\n\n %s \n\n' %nCent)
     for j in range(int(nCent)-1):
 
         # segment options for breakpoints
@@ -1033,9 +1033,9 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
                 options.append(nodeID)
 
                 # debugging:
-                print("\ncentList: %s\n " %centList)
-                print("target 1st centromere %s" %centList[n])
-                print("target 2nd centromere %s" %centList[n+1])
+                #print("\ncentList: %s\n " %centList)
+                #print("target 1st centromere %s" %centList[n])
+                #print("target 2nd centromere %s" %centList[n+1])
 
             # appends nodes between centromeres
             elif nodeID != centList[n+1] and len(options) != 0:
@@ -1062,8 +1062,8 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
         segType = nodes[nodeChoice].get("type")
         centPos = int(centromerePos[jChrom-1])
 
-        print("key: nodeID, junction position, chromosome, type, centromere position")
-        print("%s %s %s %s %s" %(nodeChoice, jPos, jChrom, segType, centPos))
+        #print("key: nodeID, junction position, chromosome, type, centromere position")
+        #print("%s %s %s %s %s" %(nodeChoice, jPos, jChrom, segType, centPos))
 
 
         # choosing breakpoint position given the segment type
@@ -1254,7 +1254,7 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
     return nodes
 
 
-def mitosis(nodes, pathList, cycleID, delta, centromerePos):
+def mitosis(nodes, pathList, cycleID, sigma, centromerePos):
     print('\nEntering M\n')
 
     for i in range(len(pathList)):
@@ -1278,18 +1278,13 @@ def mitosis(nodes, pathList, cycleID, delta, centromerePos):
         # breakage
         elif nCent > 1:
             nodes = cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos)
-            
+
     return nodes
 
 
-def analysis(nodes, cycleID, dest, mu, lmbda, delta, chromLengths):
+def analysis(nodes, cycleID, dest, mu, lmbda, sigma, chromLengths, nDSB):
 
     if cycleID == 0:
-
-        with open('../output/0' +  str(dest) + '/parameters.tsv', 'w', newline='') as file:
-            writer = csv.writer(file, delimiter = '\t')
-            writer.writerow(["mu", "lmbda", "delta"])
-            writer.writerow([mu, lmbda, delta])
 
         with open('../output/0' +  str(dest) + '/sv_data.tsv', 'w', newline='') as file:
             writer = csv.writer(file, delimiter = '\t')
@@ -1298,6 +1293,12 @@ def analysis(nodes, cycleID, dest, mu, lmbda, delta, chromLengths):
         with open('../output/0' +  str(dest) + '/cn_data.tsv', 'w', newline='') as file:
             writer = csv.writer(file, delimiter = '\t')
             writer.writerow(["chr", "start", "end", "cn", "haplotype", "cycleNum"])
+
+    if cycleID == 1:
+        with open('../output/0' +  str(dest) + '/parameters.tsv', 'w', newline='') as file:
+            writer = csv.writer(file, delimiter = '\t')
+            writer.writerow(["mu", "lmbda", "sigma"])
+            writer.writerow([len(nodes)/2, lmbda, sigma])
 
     # analyse data for SVs
     calcSVs.deletions(nodes,cycleID,dest)
@@ -1328,13 +1329,13 @@ def main():
     # parameters
     mu    = 10   # DSB
     lmbda = 5    # max number of unrepaired segments a cell can handle
-    delta = 2    # nCycles
+    sigma = 2    # nCycles
 
     # cell cycles
     cycleID = 0
     count   = 0
 
-    for i in range(delta):
+    for i in range(sigma):
         print("\n############################ ")
 
         # generate breakpoints
@@ -1382,11 +1383,11 @@ def main():
 
 
             # mitosis phase
-            nodes = mitosis(nodes, pathList, cycleID, delta, centromerePos)
+            nodes = mitosis(nodes, pathList, cycleID, sigma, centromerePos)
 
 
             # open output file for writing SV data
-            analysis(nodes, cycleID, dest, mu, lmbda, delta, chromLengths)
+            analysis(nodes, cycleID, dest, mu, lmbda, sigma, chromLengths, nDSB)
 
 
         else: print("Exception, no available junctions.")
@@ -1395,6 +1396,7 @@ def main():
         pathList.clear()
 
     nodes.clear()
+    print("\n~~ End of Simulation ~~\n")
     return
 
 
