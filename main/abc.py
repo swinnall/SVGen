@@ -65,7 +65,7 @@ def readCN(nChrom):
     lmbda = par_df.iat[0,1]
     sigma = par_df.iat[0,2]
 
-
+    # print("\n %s\n" %cnInfo)
     return cnInfo, mu, lmbda, sigma
 
 
@@ -88,7 +88,6 @@ def calcDistance(cnInfo, nChrom):
         nbp = len(cnInfo[i])
         p[i].append(nbp)
 
-
         # determine number of oscillating cn segments
         nOscSeg = 0
         if len(cnInfo[i]) > 0:
@@ -98,7 +97,7 @@ def calcDistance(cnInfo, nChrom):
                     nOscSeg += 1
         p[i].append(nOscSeg)
 
-
+    #print(p)
     ## Generate Distance ##
     d = [ [] for i in range(nChrom)]
 
@@ -124,7 +123,7 @@ def acceptReject(d, mu, lmbda, sigma, nChrom):
     chromCount = 0
     for i in range(nChrom):
 
-        if d[i][0] < 2:
+        if d[i][0] < 3:
             chromCount += 1
             outcome = True
 
@@ -162,7 +161,7 @@ def main():
     copy(src,dest)
 
     # run simulation N times
-    N = 1000
+    N = 1
     for i in range(N):
 
         # generate SVs

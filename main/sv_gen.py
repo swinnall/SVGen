@@ -1,14 +1,8 @@
-" Evolutionary Model of Structural Variation (EMoSV); Author: Samuel Winnall "
+" Evolutionary Model of Structural Variation (SVGen); Author: Samuel Winnall "
 
 ################################# comments ###################################
 
-" analysis - insertions: currently not accycleIDing for BFB unconnected junctions "
 
-" analysis - duplications: same problem as above "
-
-" analysis - inversions: may be cycleIDed twice, not a big problem"
-
-" do i need to return nodes everytime i change a key? "
 
 ################################# imports ####################################
 
@@ -63,65 +57,113 @@ class cirosPlot():
         self.cycleNum
 
     def deletions(self, nodes, cycleID, dest):
+        coveredNodes = []
+
         for i in range(len(nodes)):
-            if nodes[i].get("cn") == 0:
-                chr1     = nodes[i].get("chromID")
-                coord1   = nodes[i].get("position")
-                strand1  = '+'
-                chr2     = chr1
-                coord2   = coord1
-                strand2  = '-'
-                extra    = 'svtype=DEL'
-                cycleNum  = cycleID
+            nodeID = nodes[i].get("nodeID")
+            coveredNodes.append(nodeID)
+
+            if nodes[nodeID].get("cn") == 0:
+
+                # prevents repeats of nonTel segments
+                # will have repeats of duplicated deleted segments
+                # second condition as nodes can be placed on deleted paths
+                if nodes[nodeID].get("type") == 'nonTel' and nodes[nodeID].get("WT") != 'none':
+                    adjID = int(nodes[nodeID].get("WT"))
+
+                    if adjID not in coveredNodes:
+                        chr1     = nodes[nodeID].get("chromID")
+                        coord1   = nodes[nodeID].get("position")
+                        strand1  = '+'
+                        chr2     = chr1
+                        coord2   = coord1
+                        strand2  = '-'
+                        extra    = 'svtype=DEL'
+                        cycleNum  = cycleID
+
+                elif nodes[nodeID].get("type") != 'nonTel':
+                    chr1     = nodes[nodeID].get("chromID")
+                    coord1   = nodes[nodeID].get("position")
+                    strand1  = '+'
+                    chr2     = chr1
+                    coord2   = coord1
+                    strand2  = '-'
+                    extra    = 'svtype=DEL'
+                    cycleNum  = cycleID
 
                 # write to csv
                 with open('../output/0' +  str(dest) + '/sv_data.tsv', 'a', newline='') as file:
                     writer = csv.writer(file, delimiter = '\t')
                     writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2,	extra, cycleNum])
+
+        print(coveredNodes)
         return
 
     def insertions(self, nodes, cycleID, dest):
+        coveredNodes = []
+
         for i in range(len(nodes)):
+            nodeID = nodes[i].get("nodeID")
+            coveredNodes.append(nodeID)
 
-            if nodes[i].get("cn") > 0 and nodes[i].get("M") != 'none' and \
-                nodes[i].get("position") != nodes[ int(nodes[i].get("M")) ].get("position"):
+            if nodes[nodeID].get("cn") > 0 and nodes[nodeID].get("M") != 'none' and \
+                nodes[nodeID].get("position") != nodes[ int(nodes[nodeID].get("M")) ].get("position"):
 
-                chr1     = nodes[i].get("chromID")
-                coord1   = nodes[i].get("position")
-                strand1  = '+'
-                chr2     = nodes[ int(nodes[i].get("M")) ].get("chromID")
-                coord2   = nodes[ int(nodes[i].get("M")) ].get("position")
-                strand2  = '+'
-                extra    = 'svtype=INS'
-                cycleNum  = cycleID
+                # checks node has an M connection
+                if nodes[nodeID].get("M") != 'none':
+                    connID = nodes[nodeID].get("M")
 
-                # write to csv
-                with open('../output/0' +  str(dest) + '/sv_data.tsv', 'a', newline='') as file:
-                    writer = csv.writer(file, delimiter = '\t')
-                    writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2,	extra, cycleNum])
+                    # checks it hasn't already been listed
+                    if connID not in coveredNodes:
 
-            else: pass
+                        chr1     = nodes[nodeID].get("chromID")
+                        coord1   = nodes[nodeID].get("position")
+                        strand1  = '+'
+                        chr2     = nodes[ int(nodes[nodeID].get("M")) ].get("chromID")
+                        coord2   = nodes[ int(nodes[nodeID].get("M")) ].get("position")
+                        strand2  = '+'
+                        extra    = 'svtype=INS'
+                        cycleNum  = cycleID
+
+                        # write to csv
+                        with open('../output/0' +  str(dest) + '/sv_data.tsv', 'a', newline='') as file:
+                            writer = csv.writer(file, delimiter = '\t')
+                            writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2,	extra, cycleNum])
+
+        return
 
     def inversions(self, nodes, cycleID, dest, chromLengths):
+        coveredNodes = []
+
         for i in range(len(nodes)):
+            nodeID = nodes[i].get("nodeID")
+            coveredNodes.append(nodeID)
 
-            if nodes[i].get("cn") > 0 and nodes[i].get("inv") == True:
+            if nodes[nodeID].get("cn") > 0 and nodes[nodeID].get("inv") == True:
 
-                if nodes[i].get("type") == 'nonTel':
+                if nodes[nodeID].get("type") == 'nonTel':
+                    adjID = nodes[ int(nodes[nodeID].get("WT")) ].get("nodeID")
 
-                    chr1     = nodes[i].get("chromID")
-                    coord1   = nodes[i].get("position")
-                    strand1  = '+'
-                    chr2     = chr1
-                    coord2   = nodes[ int(nodes[i].get("WT")) ].get("position")
-                    strand2  = '+'
-                    extra    = 'svtype=INV'
-                    cycleNum  = cycleID
+                    if adjID not in coveredNodes:
+
+                        chr1     = nodes[nodeID].get("chromID")
+                        coord1   = nodes[nodeID].get("position")
+                        strand1  = '+'
+                        chr2     = chr1
+                        coord2   = nodes[ int(nodes[nodeID].get("WT")) ].get("position")
+                        strand2  = '+'
+                        extra    = 'svtype=INV'
+                        cycleNum  = cycleID
+
+                        # write to csv
+                        with open('../output/0' +  str(dest) + '/sv_data.tsv', 'a', newline='') as file:
+                            writer = csv.writer(file, delimiter = '\t')
+                            writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2,	extra, cycleNum])
 
                 elif nodes[i].get("type") == 'pTel':
 
-                    chr1     = nodes[i].get("chromID")
-                    coord1   = nodes[i].get("position")
+                    chr1     = nodes[nodeID].get("chromID")
+                    coord1   = nodes[nodeID].get("position")
                     strand1  = '+'
                     chr2     = chr1
                     coord2   = 0
@@ -129,10 +171,15 @@ class cirosPlot():
                     extra    = 'svtype=INV'
                     cycleNum  = cycleID
 
+                    # write to csv
+                    with open('../output/0' +  str(dest) + '/sv_data.tsv', 'a', newline='') as file:
+                        writer = csv.writer(file, delimiter = '\t')
+                        writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2,	extra, cycleNum])
+
                 elif nodes[i].get("type") == 'qTel':
 
-                    chr1     = nodes[i].get("chromID")
-                    coord1   = nodes[i].get("position")
+                    chr1     = nodes[nodeID].get("chromID")
+                    coord1   = nodes[nodeID].get("position")
                     strand1  = '+'
                     chr2     = chr1
                     coord2   = chromLengths[1][chr1-1]
@@ -140,76 +187,53 @@ class cirosPlot():
                     extra    = 'svtype=INV'
                     cycleNum  = cycleID
 
-                # write to csv
-                with open('../output/0' +  str(dest) + '/sv_data.tsv', 'a', newline='') as file:
-                    writer = csv.writer(file, delimiter = '\t')
-                    writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2,	extra, cycleNum])
+                    # write to csv
+                    with open('../output/0' +  str(dest) + '/sv_data.tsv', 'a', newline='') as file:
+                        writer = csv.writer(file, delimiter = '\t')
+                        writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2,	extra, cycleNum])
         return
 
     def duplications(self, nodes, cycleID, dest, chromLengths):
         coveredNodes = []
 
-        # debugging
-        #print("\nAnalysis - Duplications Error:\n")
-
         for i in range(len(nodes)):
             nodeID = nodes[i].get("nodeID")
             coveredNodes.append(nodeID)
 
-            if nodes[i].get("type") == 'nonTel' and nodes[i].get("M") != 'none':
+            if nodes[nodeID].get("type") == 'nonTel' and nodes[i].get("M") != 'none':
+                adjID = int(nodes[nodeID].get("WT"))
 
-                # debugging
-                # print("Node causing error: %s" %nodes[i])
+                if adjID not in coveredNodes:
 
-
-                AdjacentID = nodes[ int(nodes[i].get("WT")) ].get("nodeID")
-
-                if AdjacentID not in coveredNodes:
-
-                    chr1    = nodes[i].get("chromID")
-                    start   = nodes[i].get("position")
-                    end     = nodes[AdjacentID].get("position")
-                    cn      = nodes[i].get("cn")
-                    hap     = nodes[i].get("haplotype")
+                    chr1    = nodes[nodeID].get("chromID")
+                    start   = nodes[nodeID].get("position")
+                    end     = nodes[adjID].get("position")
+                    cn      = nodes[nodeID].get("cn")
+                    hap     = nodes[nodeID].get("haplotype")
                     cycleNum = cycleID
 
-                    # write to csv
-                    with open('../output/0' +  str(dest) + '/cn_data.tsv', 'a', newline='') as file:
-                        writer = csv.writer(file, delimiter = '\t')
-                        writer.writerow([chr1, start, end, cn, hap, cycleNum])
-                else: pass
+            elif nodes[nodeID].get("type") == 'pTel':
 
-
-            elif nodes[i].get("type") == 'pTel':
-
-                chr1    = nodes[i].get("chromID")
+                chr1    = nodes[nodeID].get("chromID")
                 start   = 0
-                end     = nodes[i].get("position")
-                cn      = nodes[i].get("cn")
-                hap     = nodes[i].get("haplotype")
+                end     = nodes[nodeID].get("position")
+                cn      = nodes[nodeID].get("cn")
+                hap     = nodes[nodeID].get("haplotype")
                 cycleNum = cycleID
 
-                # write to csv
-                with open('../output/0' +  str(dest) + '/cn_data.tsv', 'a', newline='') as file:
-                    writer = csv.writer(file, delimiter = '\t')
-                    writer.writerow([chr1, start, end, cn, hap, cycleNum])
+            elif nodes[nodeID].get("type") == 'qTel':
 
-
-            elif nodes[i].get("type") == 'qTel':
-
-                chr1    = nodes[i].get("chromID")
-                start   = nodes[i].get("position")
+                chr1    = nodes[nodeID].get("chromID")
+                start   = nodes[nodeID].get("position")
                 end     = chromLengths[1][chr1-1]
-                cn      = nodes[i].get("cn")
-                hap     = nodes[i].get("haplotype")
+                cn      = nodes[nodeID].get("cn")
+                hap     = nodes[nodeID].get("haplotype")
                 cycleNum = cycleID
 
-                # write to csv
-                with open('../output/0' +  str(dest) + '/cn_data.tsv', 'a', newline='') as file:
-                    writer = csv.writer(file, delimiter = '\t')
-                    writer.writerow([chr1, start, end, cn, hap, cycleNum])
-
-            else: pass
+            # write to csv
+            with open('../output/0' +  str(dest) + '/cn_data.tsv', 'a', newline='') as file:
+                writer = csv.writer(file, delimiter = '\t')
+                writer.writerow([chr1, start, end, cn, hap, cycleNum])
 
         return
 
@@ -279,12 +303,11 @@ class CheckBool():
 def generateDSBs(mu):
 
     nDSB = int( np.random.poisson(mu, 1) )
-    #nDSB = int( random.randint(0,mu) )
 
     return nDSB
 
 
-def generateNodes(nodes,nDSB,nChroms,chromLengths,firstEvent):
+def generateNodes(nodes,nDSB,nChroms,chromLengths,firstEvent,chromMat):
     print("\nEntering node generation\n")
 
     # reset prev path information
@@ -318,8 +341,12 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,firstEvent):
     # twice the number of breakpoints added (LR junctions)
     for i in range(0, 2*nDSB, 2):
 
-        # generate positional information
-        chromosomeTarget = random.randint(1, nChroms)
+        ## generate positional information
+        # biased chromosome target
+        chromosomeTarget = int( np.random.choice([i for i in range(nChroms)], 1, p = chromMat) ) + 1 # for index
+        #print(chromosomeTarget)
+        # normal chromosome target (random)
+        #chromosomeTarget = random.randint(1, nChroms)
         breakpointPos    = random.randint(0, chromLengths[1][chromosomeTarget-1])
         haplotype        = np.random.choice(hapChoice, 1)
 
@@ -381,6 +408,7 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,firstEvent):
 
     # non initial event
     elif firstEvent == False and nDSB > 0:
+
         # assumed no cn is greater than 5 in simulation
         cnidList   = [i for i in range(1,5)]
 
@@ -426,9 +454,10 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,firstEvent):
 
                             break # prevents repeat assignment
 
+
                 # choose cnID location based on which nodes define the segment (opposite directions/sides)
-                for k in range(len(cnidChoice)):
-                    idxChoice = cnidChoice[k]
+                for l in range(len(cnidChoice)):
+                    idxChoice = cnidChoice[l]
                     if idxChoice[2] != idxChoice[3]:
                         cnRef = idxChoice
                         break
@@ -441,13 +470,18 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,firstEvent):
                 nodes[i]["cn"]   = cnRef[1]
                 nodes[i+1]["cn"] = cnRef[1]
 
+                # cn = 0 means DSB occured on deleted segment
+                # correct nDSB
+                #if cnRef[1] == 0:
+                #    print("oof what to do here?")
+            #        nDSB -= 2
+            #        break
+
                 # debugging
                 #print("chosen cnID = %s" %cnRef[0])
                 #print("chosen cn   = %s" %cnRef[1])
 
-
-
-    return nodes
+    return nodes#, nDSB
 
 
 def generateTelomeres(nodes):
@@ -1326,6 +1360,21 @@ def main():
     for length in range(len(chromLengths)):
         centromerePos.append( chromLengths[1][length] / 2 )
 
+    # define matrix preferencing chromosomes
+    chromMat = [0 for i in range(nChroms)]
+    nBiasedChroms = random.randint(1,3)
+    selectedChromosomes = np.random.choice([i for i in range(nChroms)], nBiasedChroms, replace = False)
+
+    p0 = 0.66
+    p1 = p0/nBiasedChroms
+    p2 = (1-p0)/(nChroms-nBiasedChroms)
+
+    for i in range(nChroms):
+        if i in selectedChromosomes:
+            chromMat[i] = p1
+        else:
+            chromMat[i] = p2
+
     # parameters
     mu    = 10   # DSB
     lmbda = 5    # max number of unrepaired segments a cell can handle
@@ -1353,7 +1402,7 @@ def main():
 
 
             # initialises nodes dictionary
-            nodes = generateNodes(nodes, nDSB, nChroms, chromLengths, firstEvent)
+            nodes = generateNodes(nodes, nDSB, nChroms, chromLengths, firstEvent, chromMat)
             print("Total number of junctions in nucleus: %d\n" %len(nodes))
 
 

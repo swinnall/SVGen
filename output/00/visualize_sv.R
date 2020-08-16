@@ -1,4 +1,4 @@
-# Visualize the results of SW's break point model with circlize
+# Visualize the results of SVGen with circlize
 library(circlize)
 library(tidyverse)
 
@@ -25,12 +25,12 @@ get_CN <- function(fname, cutoff = 5*10e4){
 
   cns$chr = paste0("chr", cns$chr)
 
-  cns %>% select(chr, start, end, cn, cycleNum) -> cnbed
+  cns %>% select(chr, start, end, cn, haplotype, cycleNum) -> cnbed
   unique(cns$cn)
   summary(cnbed$end-cnbed$start)
 
-  #cnbed %>% filter(value1 + value2 != 1)  %>% filter(end-start > cutoff) -> cnsel
-  cnbed %>% filter(end-start > cutoff) -> cnsel
+
+  cnbed %>%  filter(end-start > cutoff) -> cnsel
   str(cnsel)
 
   unique(cnsel$cn)
@@ -74,11 +74,7 @@ plot_CN_SV <- function(fsv, fcnv){
   cnsel = get_CN(fcnv)
 
   # CN colors
-  # diploid genome
-  #  cols = c("#6283A9","#bdd7e7","#f0f0f0","#FCAE91", "#B9574E", "#76000D", "#3b0107")
-  #  col_fun = colorRamp2(breaks = seq(0:6)-1, colors = cols)
-
-  # haploid genome
+  # diploid genome - 2 cell cycles means max cn = 2
   cols = c("#6283A9","#f0f0f0", "#B9574E", "#3b0107")
   col_fun = colorRamp2(breaks = seq(0:3)-1, colors = cols)
 
