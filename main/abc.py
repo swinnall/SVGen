@@ -1,4 +1,4 @@
-" Approximate Bayesian Computation Analysis; Author: Samuel Winnall "
+" Approximate Bayesian Computation Analysis; Author: SanDSBel Winnall "
 
 ################################# Overview ###################################
 
@@ -61,12 +61,12 @@ def readCN(nChrom):
     # read SVGen parameter info
     r_par_TSV = '../output/00' + '/parameters.tsv'
     par_df = pd.read_csv(r_par_TSV, sep="\t")
-    mu    = par_df.iat[0,0]
+    nDSB  = par_df.iat[0,0]
     lmbda = par_df.iat[0,1]
     sigma = par_df.iat[0,2]
 
     # print("\n %s\n" %cnInfo)
-    return cnInfo, mu, lmbda, sigma
+    return cnInfo, nDSB, lmbda, sigma
 
 
 
@@ -112,8 +112,8 @@ def calcDistance(cnInfo, nChrom):
     return d
 
 
-def acceptReject(d, mu, lmbda, sigma, nChrom):
-    # scans d; if any chromosome is within acceptable range then simulation
+def acceptReject(d, nDSB, lmbda, sigma, nChrom):
+    # scans d; if any chromosome is within acceptable range then sinDSBlation
     # parameters and d are saved in memory
 
     # chromCount = 1 is defined as canonical chromothripsis
@@ -160,7 +160,7 @@ def main():
     dest = '../output/00'
     copy(src,dest)
 
-    # run simulation N times
+    # run sinDSBlation N times
     N = 1
     for i in range(N):
 
@@ -168,20 +168,20 @@ def main():
         sv_gen.main()
 
         # read copy number info
-        cnInfo, mu, lmbda, sigma = readCN(nChrom)
+        cnInfo, nDSB, lmbda, sigma = readCN(nChrom)
 
         # generate distance to SS
         d = calcDistance(cnInfo, nChrom)
 
-        # determine validity of simulation
-        outcome = acceptReject(d, mu, lmbda, sigma, nChrom)
+        # determine validity of sinDSBlation
+        outcome = acceptReject(d, nDSB, lmbda, sigma, nChrom)
 
-        # append simulation info to memory
+        # append sinDSBlation info to memory
         if outcome == True:
-            mem.append( (d, mu, lmbda, sigma) )
+            mem.append( (d, nDSB, lmbda, sigma) )
 
     #print(mem)
-    print("number of accepted simulations: %s" %(len(mem)/N))
+    print("number of accepted sinDSBlations: %s" %(len(mem)/N))
 
     if len(mem) > 0:
         analysis(mem)
