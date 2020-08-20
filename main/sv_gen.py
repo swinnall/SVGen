@@ -205,11 +205,17 @@ class cirosPlot():
 
                 if adjID not in coveredNodes:
 
-                    chr1    = nodes[nodeID].get("chromID")
-                    start   = nodes[nodeID].get("position")
-                    end     = nodes[adjID].get("position")
-                    cn      = nodes[nodeID].get("cn")
-                    hap     = nodes[nodeID].get("haplotype")
+                    chr1     = nodes[nodeID].get("chromID")
+                    start    = nodes[nodeID].get("position")
+                    end      = nodes[adjID].get("position")
+                    cn       = nodes[nodeID].get("cn")
+                    hap      = nodes[nodeID].get("haplotype")
+
+                    if hap == 0:
+                        cn_hap = "cn={'1': {'A': %s, 'B': 4}}" %cn
+                    elif hap == 1:
+                        cn_hap = "cn={'1': {'A': 4, 'B': %s}}" %cn
+
                     cycleNum = cycleID
 
             elif nodes[nodeID].get("type") == 'pTel':
@@ -219,6 +225,12 @@ class cirosPlot():
                 end     = nodes[nodeID].get("position")
                 cn      = nodes[nodeID].get("cn")
                 hap     = nodes[nodeID].get("haplotype")
+
+                if hap == 0:
+                    cn_hap = "cn={'1': {'A': %s, 'B': 4}}" %cn
+                elif hap == 1:
+                    cn_hap = "cn={'1': {'A': 4, 'B': %s}}" %cn
+
                 cycleNum = cycleID
 
             elif nodes[nodeID].get("type") == 'qTel':
@@ -228,12 +240,18 @@ class cirosPlot():
                 end     = chromLengths[1][chr1-1]
                 cn      = nodes[nodeID].get("cn")
                 hap     = nodes[nodeID].get("haplotype")
+
+                if hap == 0:
+                    cn_hap = "cn={'1': {'A': %s, 'B': 4}}" %cn
+                elif hap == 1:
+                    cn_hap = "cn={'1': {'A': 4, 'B': %s}}" %cn
+                    
                 cycleNum = cycleID
 
             # write to csv
             with open('../output/0' +  str(dest) + '/cn_data.tsv', 'a', newline='') as file:
                 writer = csv.writer(file, delimiter = '\t')
-                writer.writerow([chr1, start, end, cn, hap, cycleNum])
+                writer.writerow([chr1, start, end, cn_hap, cycleNum])
 
         return
 
@@ -302,7 +320,8 @@ class CheckBool():
 
 def generateDSBs(mu):
 
-    nDSB = int( np.random.poisson(mu, 1) )
+    nDSB = int(random.randint(0,mu))
+    #nDSB = int( np.random.poisson(mu, 1) )
 
     return nDSB
 
@@ -1326,7 +1345,7 @@ def analysis(nodes, cycleID, dest, mu, lmbda, sigma, chromLengths, nDSB):
 
         with open('../output/0' +  str(dest) + '/cn_data.tsv', 'w', newline='') as file:
             writer = csv.writer(file, delimiter = '\t')
-            writer.writerow(["chr", "start", "end", "cn", "haplotype", "cycleNum"])
+            writer.writerow(["chr", "start", "end", "extra", "cycleNum"])
 
     if cycleID == 1:
         with open('../output/0' +  str(dest) + '/parameters.tsv', 'w', newline='') as file:

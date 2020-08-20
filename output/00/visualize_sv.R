@@ -20,20 +20,24 @@ get_SV <- function(fname){
   return(list(svs = svs, sv.first=sv.first, sv.second=sv.second))
 }
 
+
 get_CN <- function(fname, cutoff = 5*10e4){
   cns = read_tsv(fname)
 
+  cns %>% rowwise() %>% mutate(cnA = as.numeric(strsplit(strsplit(strsplit(extra, "=")[[1]][2],":")[[1]][3],",")[[1]][1]), cnB = as.numeric(strsplit(strsplit(strsplit(extra, "=")[[1]][2],":")[[1]][4],"}")[[1]][1])) -> cns
+
   cns$chr = paste0("chr", cns$chr)
 
-  cns %>% select(chr, start, end, cn, haplotype, cycleNum) -> cnbed
-  unique(cns$cn)
+  cns %>% select(chr, start, end, value1 = cnA, value2 = cnB, cycleNum) -> cnbed
+  unique(cns$cnA)
+  unique(cns$cnB)
   summary(cnbed$end-cnbed$start)
 
-
-  cnbed %>%  filter(end-start > cutoff) -> cnsel
+  cnbed %>% filter(value1 + value2 != 2)  %>% filter(end-start > cutoff) -> cnsel
   str(cnsel)
 
-  unique(cnsel$cn)
+  unique(cnsel$value1)
+  unique(cnsel$value2)
 
   return(cnsel)
 }
@@ -74,9 +78,8 @@ plot_CN_SV <- function(fsv, fcnv){
   cnsel = get_CN(fcnv)
 
   # CN colors
-  # diploid genome - 2 cell cycles means max cn = 2
-  cols = c("#6283A9","#f0f0f0", "#B9574E", "#3b0107")
-  col_fun = colorRamp2(breaks = seq(0:3)-1, colors = cols)
+  cols = c("#6283A9","#f0f0f0", "#B9574E", "#3b0107", "#ffffff00")
+  col_fun = colorRamp2(breaks = seq(0:4)-1, colors = cols)
 
   # get SV data
   res = get_SV(fsv)
