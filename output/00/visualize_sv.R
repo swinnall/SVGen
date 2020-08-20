@@ -114,7 +114,7 @@ plot_CN_SV <- function(fsv, fcnv){
 
 
 fsv = "sv_data.tsv"
-plot_SV(fsv)
+#plot_SV(fsv)
 
 fcnv = "cn_data.tsv"
 plot_CN_SV(fsv, fcnv)

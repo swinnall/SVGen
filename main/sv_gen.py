@@ -107,7 +107,8 @@ class cirosPlot():
             coveredNodes.append(nodeID)
 
             if nodes[nodeID].get("cn") > 0 and nodes[nodeID].get("M") != 'none' and \
-                nodes[nodeID].get("position") != nodes[ int(nodes[nodeID].get("M")) ].get("position"):
+                nodes[nodeID].get("position") != nodes[ int(nodes[nodeID].get("M")) ].get("position") and \
+                nodes[nodeID].get("cellID") == 1:
 
                 # checks node has an M connection
                 if nodes[nodeID].get("M") != 'none':
@@ -139,7 +140,8 @@ class cirosPlot():
             nodeID = nodes[i].get("nodeID")
             coveredNodes.append(nodeID)
 
-            if nodes[nodeID].get("cn") > 0 and nodes[nodeID].get("inv") == True:
+            if nodes[nodeID].get("cn") > 0 and nodes[nodeID].get("inv") == True and \
+                nodes[nodeID].get("cellID") == 1:
 
                 if nodes[nodeID].get("type") == 'nonTel':
                     adjID = nodes[ int(nodes[nodeID].get("WT")) ].get("nodeID")
@@ -197,61 +199,68 @@ class cirosPlot():
         coveredNodes = []
 
         for i in range(len(nodes)):
+
             nodeID = nodes[i].get("nodeID")
             coveredNodes.append(nodeID)
 
-            if nodes[nodeID].get("type") == 'nonTel' and nodes[i].get("M") != 'none':
+
+            if nodes[nodeID].get("type") == 'pTel' and nodes[nodeID].get("cellID") == 1:
+                chr1     = nodes[nodeID].get("chromID")
+                start    = 0
+                end      = nodes[nodeID].get("position")
+                cn       = nodes[nodeID].get("cn")
+                hap      = nodes[nodeID].get("haplotype")
+                if hap == 0:
+                    cn_hap = "cn={'1': {'A': %s, 'B': 4}}" %cn
+                elif hap == 1:
+                    cn_hap = "cn={'1': {'A': 4, 'B': %s}}" %cn
+                cycleNum = cycleID
+
+                # write to csv
+                with open('../output/0' +  str(dest) + '/cn_data.tsv', 'a', newline='') as file:
+                    writer = csv.writer(file, delimiter = '\t')
+                    writer.writerow([chr1, start, end, cn_hap, cycleNum])
+
+
+            elif nodes[nodeID].get("type") == 'nonTel' and nodes[i].get("M") != 'none' \
+                and nodes[nodeID].get("cellID") == 1:
                 adjID = int(nodes[nodeID].get("WT"))
 
                 if adjID not in coveredNodes:
-
                     chr1     = nodes[nodeID].get("chromID")
                     start    = nodes[nodeID].get("position")
                     end      = nodes[adjID].get("position")
                     cn       = nodes[nodeID].get("cn")
                     hap      = nodes[nodeID].get("haplotype")
-
                     if hap == 0:
                         cn_hap = "cn={'1': {'A': %s, 'B': 4}}" %cn
                     elif hap == 1:
                         cn_hap = "cn={'1': {'A': 4, 'B': %s}}" %cn
-
                     cycleNum = cycleID
 
-            elif nodes[nodeID].get("type") == 'pTel':
+                    # write to csv
+                    with open('../output/0' +  str(dest) + '/cn_data.tsv', 'a', newline='') as file:
+                        writer = csv.writer(file, delimiter = '\t')
+                        writer.writerow([chr1, start, end, cn_hap, cycleNum])
 
-                chr1    = nodes[nodeID].get("chromID")
-                start   = 0
-                end     = nodes[nodeID].get("position")
-                cn      = nodes[nodeID].get("cn")
-                hap     = nodes[nodeID].get("haplotype")
 
+            elif nodes[nodeID].get("type") == 'qTel' and nodes[nodeID].get("cellID") == 1:
+
+                chr1     = nodes[nodeID].get("chromID")
+                start    = nodes[nodeID].get("position")
+                end      = chromLengths[1][chr1-1]
+                cn       = nodes[nodeID].get("cn")
+                hap      = nodes[nodeID].get("haplotype")
                 if hap == 0:
                     cn_hap = "cn={'1': {'A': %s, 'B': 4}}" %cn
                 elif hap == 1:
                     cn_hap = "cn={'1': {'A': 4, 'B': %s}}" %cn
-
                 cycleNum = cycleID
 
-            elif nodes[nodeID].get("type") == 'qTel':
-
-                chr1    = nodes[nodeID].get("chromID")
-                start   = nodes[nodeID].get("position")
-                end     = chromLengths[1][chr1-1]
-                cn      = nodes[nodeID].get("cn")
-                hap     = nodes[nodeID].get("haplotype")
-
-                if hap == 0:
-                    cn_hap = "cn={'1': {'A': %s, 'B': 4}}" %cn
-                elif hap == 1:
-                    cn_hap = "cn={'1': {'A': 4, 'B': %s}}" %cn
-                    
-                cycleNum = cycleID
-
-            # write to csv
-            with open('../output/0' +  str(dest) + '/cn_data.tsv', 'a', newline='') as file:
-                writer = csv.writer(file, delimiter = '\t')
-                writer.writerow([chr1, start, end, cn_hap, cycleNum])
+                # write to csv
+                with open('../output/0' +  str(dest) + '/cn_data.tsv', 'a', newline='') as file:
+                    writer = csv.writer(file, delimiter = '\t')
+                    writer.writerow([chr1, start, end, cn_hap, cycleNum])
 
         return
 
@@ -372,6 +381,7 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,firstEvent,chromMat):
         nodeData = {
             # identification:
             "nodeID":    uniqueID,
+            "cellID":    1,
             "chromID":   chromosomeTarget,
             "haplotype": haplotype[0],
             "position":  breakpointPos,
@@ -392,6 +402,7 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,firstEvent,chromMat):
         nodeData = {
             # identification:
             "nodeID":    uniqueID,
+            "cellID":    1,
             "chromID":   chromosomeTarget,
             "haplotype": haplotype[0],
             "position":  breakpointPos,
@@ -914,6 +925,7 @@ def syn_g2(nodes, pathList, telomeric, nonTelomeric):
             nodes[nodeID]["cn"] = nodes[nodeID].get("cn") + 1
             nodes.append({
                 "nodeID":    uniqueID,
+                "cellID":    nodes[nodeID].get("cellID"),
                 "chromID":   nodes[nodeID].get("chromID"),
                 "haplotype": nodes[nodeID].get("haplotype"),
                 "position":  nodes[nodeID].get("position"),
@@ -991,6 +1003,7 @@ def syn_g2(nodes, pathList, telomeric, nonTelomeric):
             nodes[nodeID]["cn"] = nodes[nodeID].get("cn") + 1
             nodes.append({
                 "nodeID":    uniqueID,
+                "cellID":    nodes[nodeID].get("cellID"),
                 "chromID":   nodes[nodeID].get("chromID"),
                 "haplotype": nodes[nodeID].get("haplotype"),
                 "position":  nodes[nodeID].get("position"),
@@ -1151,6 +1164,7 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
         uniqueID = len(nodes)
         nodes.append({
             "nodeID":    uniqueID,
+            "cellID":    nodes[nodeChoice].get("cellID"),
             "chromID":   jChrom,
             "haplotype": nodes[nodeChoice].get("haplotype"),
             "position":  pos,
@@ -1166,6 +1180,7 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
         })
         nodes.append({
             "nodeID":    uniqueID+1,
+            "cellID":    nodes[nodeChoice].get("cellID"),
             "chromID":   jChrom,
             "haplotype": nodes[nodeChoice].get("haplotype"),
             "position":  pos,
@@ -1291,6 +1306,7 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
         # deletes chosen subpath
         for q in range( len( subPaths[subChoice] ) ):
             nodeID = subPaths[subChoice][q]
+            nodes[nodeID]["cellID"] = 0
             nodes[nodeID]["cn"] = 0
 
     elif nCent > 2:
@@ -1302,6 +1318,7 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
 
                 if daughterCell == 0:
                     nodeID = subPaths[p][q]
+                    nodes[nodeID]["cellID"] = daughterCell
                     nodes[nodeID]["cn"] = 0
 
     return nodes
@@ -1322,6 +1339,7 @@ def mitosis(nodes, pathList, cycleID, sigma, centromerePos):
                 nodeID  = pathList.get(str(i))[j]
 
                 if daughterCell == 0:
+                    nodes[nodeID]["cellID"] = daughterCell
                     nodes[nodeID]["cn"] = 0
 
         # balanced assignment
@@ -1405,6 +1423,7 @@ def main():
 
     for i in range(sigma):
         print("\n############################ ")
+        nodes.sort(key = lambda x:x['nodeID'] )
 
         # generate breakpoints
         nDSB = generateDSBs(mu)
