@@ -78,8 +78,11 @@ plot_CN_SV <- function(fsv, fcnv){
   cnsel = get_CN(fcnv)
 
   # CN colors
-  cols = c("#6283A9","#f0f0f0", "#B9574E", "#3b0107", "#ffffff00")
-  col_fun = colorRamp2(breaks = seq(0:4)-1, colors = cols)
+  #cols = c("#6283A9","#f0f0f0", "#B9574E", "#3b0107", "#ffffff00")
+  #col_fun = colorRamp2(breaks = seq(0:4)-1, colors = cols)
+
+  cols = c("#6283A9","#f0f0f0", "#B9574E", "#3b0107")
+  col_fun = colorRamp2(breaks = seq(0:3)-1, colors = cols)
 
   # get SV data
   res = get_SV(fsv)
