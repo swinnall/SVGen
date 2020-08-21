@@ -203,14 +203,12 @@ class cirosPlot():
             nodeID = nodes[i].get("nodeID")
             coveredNodes.append(nodeID)
 
-            print("\nbeing called\n")
-            if nodes[nodeID].get("type") == 'pTel' and nodes[nodeID].get("cellID") == 1:
+            if nodes[nodeID].get("type") == 'pTel':# and nodes[nodeID].get("cellID") == 1:
                 chr1     = nodes[nodeID].get("chromID")
                 start    = 0
                 end      = nodes[nodeID].get("position")
                 cn       = nodes[nodeID].get("cn")
                 hap      = nodes[nodeID].get("haplotype")
-                print("case 1")
 
                 # converts hapltype into biological terminology
                 if hap == 0:
@@ -222,21 +220,19 @@ class cirosPlot():
                 initPosIdx  = 0
                 finalPosIdx = int( (end - start) / size )
 
-                if finalPosIdx >= len(cn_df[chr1].get(hap)):
-                    finalPosIdx = len(cn_df[chr1].get(hap))-1
+                if finalPosIdx >= len(cn_df[chr1-1].get(hap)):
+                    finalPosIdx = len(cn_df[chr1-1].get(hap))-1
 
                 # iterates along cn_df and populates that segment's cn
                 for segment in range( initPosIdx, finalPosIdx, 1 ):
-                    cn_df[chr1].get(hap)[segment][2] = cn
+                    cn_df[chr1-1].get(hap)[segment][2] = cn
 
 
-
-            elif nodes[nodeID].get("type") == 'nonTel' and nodes[i].get("M") != 'none' \
-                and nodes[nodeID].get("cellID") == 1:
+            elif nodes[nodeID].get("type") == 'nonTel' and nodes[i].get("M") != 'none':
+                #and nodes[nodeID].get("cellID") == 1:
                 adjID = int(nodes[nodeID].get("WT"))
 
                 if adjID not in coveredNodes:
-                    print("case 2")
                     chr1     = nodes[nodeID].get("chromID")
                     start    = nodes[nodeID].get("position")
                     end      = nodes[adjID].get("position")
@@ -251,15 +247,14 @@ class cirosPlot():
                     initPosIdx  = int( start / size )
                     finalPosIdx = int( (end - start) / size )
 
-                    if finalPosIdx >= len(cn_df[chr1].get(hap)):
-                        finalPosIdx = len(cn_df[chr1].get(hap))-1
+                    if finalPosIdx >= len(cn_df[chr1-1].get(hap)):
+                        finalPosIdx = len(cn_df[chr1-1].get(hap))-1
 
                     for segment in range( initPosIdx, finalPosIdx, 1 ):
-                        cn_df[chr1].get(hap)[segment][2] = cn
+                        cn_df[chr1-1].get(hap)[segment][2] = cn
 
 
-            elif nodes[nodeID].get("type") == 'qTel' and nodes[nodeID].get("cellID") == 1:
-                print("case 3")
+            elif nodes[nodeID].get("type") == 'qTel':# and nodes[nodeID].get("cellID") == 1:
                 chr1     = nodes[nodeID].get("chromID")
                 start    = nodes[nodeID].get("position")
                 end      = chromLengths[1][chr1-1]
@@ -274,20 +269,19 @@ class cirosPlot():
                 initPosIdx  = int( start / size )
                 finalPosIdx = int( (end - start) / size )
 
-                if finalPosIdx >= len(cn_df[chr1].get(hap)):
-                    finalPosIdx = len(cn_df[chr1].get(hap))-1
+                if finalPosIdx >= len(cn_df[chr1-1].get(hap)):
+                    finalPosIdx = len(cn_df[chr1-1].get(hap))-1
 
                 for segment in range( initPosIdx, finalPosIdx, 1 ):
-                    cn_df[chr1].get(hap)[segment][2] = cn
+                    cn_df[chr1-1].get(hap)[segment][2] = cn
 
-        print("checkpoint ")
-        print(cn_df)
+
+        # code for merging segments of same cn
+
+
         # code for printing out cn_df to tsv file
         for i in range(nChroms):
-            print("checkpoint ")
-            print(num)
             for j in range(num[i]):
-                print("printing...")
 
                 chr1     = i+1
                 start    = cn_df[i].get('A')[j][0] # 'B' would be equivalent
@@ -295,11 +289,10 @@ class cirosPlot():
 
                 cnA      = cn_df[i].get('A')[j][2]
                 cnB      = cn_df[i].get('B')[j][2]
-
                 cn_hap = "cn={'1': {'A': %s, 'B': %s}}" %(cnA,cnB)
 
                 cycleNum = cycleID
-                print([chr1, start, end, cn_hap, cycleNum])
+
                 # write to csv
                 with open('../output/0' +  str(dest) + '/cn_data.tsv', 'a', newline='') as file:
                     writer = csv.writer(file, delimiter = '\t')
@@ -1553,6 +1546,9 @@ def main():
             # open output file for writing SV data
             analysis(nodes, cycleID, dest, mu, lmbda, nCycles, chromLengths, nDSB, cn_df, num, size, nChroms)
 
+
+            # clear cn data frame
+            cn_df.clear()
 
         else: print("Exception, no available junctions.")
 

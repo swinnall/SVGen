@@ -33,7 +33,7 @@ get_CN <- function(fname, cutoff = 5*10e4){
   unique(cns$cnB)
   summary(cnbed$end-cnbed$start)
 
-  cnbed %>% filter(value1 + value2 != 2)  %>% filter(end-start > cutoff) -> cnsel
+  cnbed -> cnsel #%>% filter(value1 + value2 != 2)  %>% filter(end-start > cutoff) 
   str(cnsel)
 
   unique(cnsel$value1)
@@ -105,8 +105,10 @@ plot_CN_SV <- function(fsv, fcnv){
 
     circos.initializeWithIdeogram(species="hg38")
 
-    #print(cnsel[cnsel$cycleNum==i,])
-    circos.genomicHeatmap(cnsel[cnsel$cycleNum==i,], col = col_fun, side = "inside", border = "white")
+
+    cnsel_cycle = cnsel[cnsel$cycleNum==i,] %>% select(-cycleNum)
+
+    circos.genomicHeatmap(cnsel_cycle, col = col_fun, side = "inside", border = "white")
     circos.genomicLink(sv.first[svs$cycleNum==i,], sv.second[svs$cycleNum==i,], col=col[svs$cycleNum==i])
     circos.clear()
 
