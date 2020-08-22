@@ -1435,7 +1435,7 @@ def cnProfiles(nChroms, chromLengths):
 
 def sumStats(nodes, nChroms, dest, nDel, nIns, nInv, cn_df):
 
-    ## code for nbp
+    ## code for nJ, the number of junctions
     # create data frame
     nbp = [ [0,0] for i in range(nChroms)]
 

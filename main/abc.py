@@ -33,7 +33,7 @@ def copy(src, dest):
     return
 
 
-def readCN(nChrom):
+def readCN(nChroms):
 
     # read SVGen copy number info
     r_cn_TSV = '../output/00' + '/cn_data.tsv'
@@ -41,7 +41,7 @@ def readCN(nChrom):
 
 
     # define list of chromosomes
-    cnInfo = [ [] for i in range(nChrom)]
+    cnInfo = [ [] for i in range(nChroms)]
 
 
     # store cn tuple info for each chromosome
@@ -53,7 +53,7 @@ def readCN(nChrom):
 
 
     # sort cnInfo tuples by start position for each chromosome
-    for i in range(nChrom):
+    for i in range(nChroms):
         cnInfo[i].sort(key=lambda x:x[1])
 
 
@@ -68,91 +68,84 @@ def readCN(nChrom):
     return cnInfo, nDSB, lmbda, sigma
 
 
-def checkChromothripsis(cnInfo, nChrom):
+def checkChromothripsis(cnInfo, nChroms):
 
     ## Generate Summary Statistics from Criteria ##
     nOscCriteria = 10
     nbpCriteria  = 10
 
-    q = [[nOscCriteria, nbpCriteria] for i in range(nChrom)]
+    q = [[nOscCriteria, nbpCriteria] for i in range(nChroms)]
 
-    p = calc_p(cnInfo, nChrom)
+    p = calc_p(cnInfo, nChroms)
 
-    d = calc_d(nChrom, p, q)
+    d = calc_d(nChroms, p, q)
 
     return d
 
 
-def calc_q(nChrom):
-    ## Generate Summary Statistics from Model/Real Data ##
-    q = [ [] for i in range(nChrom)]
+def calc_q(nChroms):
 
-    # analyse each chromosome
-    for i in range(nChrom):
+    ## SumStats obtained from raw simulation
+    q = [ [] for i in range(nChroms)]
 
-        # determine number of breakpoints
-        nbp = len(cnInfo[i])
-        q[i].append(nbp)
+    # will read from input folder
 
-        # determine number of oscillating cn segments
-        nOscSeg = 0
-        if len(cnInfo[i]) > 0:
-            for j in range(0,len(cnInfo[i])-1,1):
-
-                if cnInfo[i][j][2] != cnInfo[i][j+1][2]:
-                    nOscSeg += 1
-        q[i].append(nOscSeg)
 
     return q
 
 
-def calc_p(cnInfo, nChrom):
-    ## Generate Summary Statistics from Simulation ##
-    p = [ [] for i in range(nChrom)]
+def calc_p(cnInfo, nChroms):
+
+    r_sumStats_TSV = '../output/00' + '/sumStats.tsv'
+    sumStat_df = pd.read_csv(r_sumStats_TSV, sep="\t")
+
+    ## Read Summary Statistics from Simulation ##
+    p = [ [] for i in range(nChroms)]
 
     # analyse each chromosome
-    for i in range(nChrom):
+    for i in range(nChroms):
 
-        # determine number of breakpoints
-        nbp = len(cnInfo[i])
-        p[i].append(nbp)
+        # key: chr, haplo, nbp, nOsc, nDel, nIns, nInv
 
-        # determine number of oscillating cn segments
-        nOscSeg = 0
-        if len(cnInfo[i]) > 0:
-            for j in range(0,len(cnInfo[i])-1,1):
+        # number of junctions
+        nJ = sumStat_df.iat[i,2]
+        p[i].append(nJ)
 
-                if cnInfo[i][j][2] != cnInfo[i][j+1][2]:
-                    nOscSeg += 1
-        p[i].append(nOscSeg)
+        # number of oscillating cn segments
+        nOsc = sumStat_df.iat[i,3]
+        p[i].append(nOsc)
 
     return p
 
 
-def calc_d(nChrom, p, q):
+def calc_d(nChroms, p, q):
     ## Generate Distance ##
-    d = [ [] for i in range(nChrom)]
+    d = [ [] for i in range(nChroms)]
 
     # for each chromosome generate the distance between each summary statistic
-    for i in range(nChrom):
+    for i in range(nChroms):
         x = 0
         for j in range(len(p[i])):
             x += (q[i][j] - p[i][j])**2
+
+            # if p is greater than threshold, zero distance therefore undo addition
+            if p[i][j] > q[i][j]:
+                x -= (q[i][j] - p[i][j])**2
 
         d[i].append( (x)**0.5 )
 
     return d
 
 
-def acceptReject(d, nDSB, lmbda, sigma, nChrom):
+def acceptReject(d, nDSB, lmbda, sigma, nChroms):
     # scans d; if any chromosome is within acceptable range then sinDSBlation
     # parameters and d are saved in memory
 
     outcome    = False
     chromCount = 0
-    for i in range(nChrom):
+    for i in range(nChroms):
 
-        if d[i][0] < 3:
+        if d[i][0] < 5:
             chromCount += 1
             outcome = True
 
@@ -182,7 +175,7 @@ def main():
     analysisType = 'check_chromothripsis' # 'determine_params'
 
     # define number of chromosomes
-    nChrom = 22
+    nChroms = 22
 
     # define memory matrix
     mem = []
@@ -200,16 +193,16 @@ def main():
         sv_gen.main()
 
         # read copy number info
-        cnInfo, nDSB, lmbda, sigma = readCN(nChrom)
+        cnInfo, nDSB, lmbda, sigma = readCN(nChroms)
 
 
         if analysisType == 'check_chromothripsis':
 
             # generate distance to SS
-            d = checkChromothripsis(cnInfo, nChrom)
+            d = checkChromothripsis(cnInfo, nChroms)
 
             # determine validity of simulation
-            outcome = acceptReject(d, nDSB, lmbda, sigma, nChrom)
+            outcome = acceptReject(d, nDSB, lmbda, sigma, nChroms)
 
             # append sinDSBlation info to memory
             if outcome == True:
@@ -221,16 +214,16 @@ def main():
         elif analysisType == 'determine_params':
 
             # model/real data summary statistics
-            q = calc_q(nChrom)
+            q = calc_q(nChroms)
 
             # current simulation summary statistics
-            p = calc_p(cnInfo, nChrom)
+            p = calc_p(cnInfo, nChroms)
 
             # distance between statistics
             d = calc_d(p, q)
 
             # determine validity of simulation
-            outcome = acceptReject(d, nDSB, lmbda, sigma, nChrom)
+            outcome = acceptReject(d, nDSB, lmbda, sigma, nChroms)
 
             # append sinDSBlation info to memory
             if outcome == True:
