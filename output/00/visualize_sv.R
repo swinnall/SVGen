@@ -33,7 +33,7 @@ get_CN <- function(fname, cutoff = 5*10e4){
   unique(cns$cnB)
   summary(cnbed$end-cnbed$start)
 
-  cnbed -> cnsel #%>% filter(value1 + value2 != 2)  %>% filter(end-start > cutoff) 
+  cnbed -> cnsel # %>% filter(value1 != 1 | value2 != 1)  %>% filter(end-start > cutoff)
   str(cnsel)
 
   unique(cnsel$value1)
@@ -78,9 +78,6 @@ plot_CN_SV <- function(fsv, fcnv){
   cnsel = get_CN(fcnv)
 
   # CN colors
-  #cols = c("#6283A9","#f0f0f0", "#B9574E", "#3b0107", "#ffffff00")
-  #col_fun = colorRamp2(breaks = seq(0:4)-1, colors = cols)
-
   cols = c("#6283A9","#f0f0f0", "#B9574E", "#3b0107")
   col_fun = colorRamp2(breaks = seq(0:3)-1, colors = cols)
 
@@ -104,7 +101,6 @@ plot_CN_SV <- function(fsv, fcnv){
     png(outfile, height=600, width=600)
 
     circos.initializeWithIdeogram(species="hg38")
-
 
     cnsel_cycle = cnsel[cnsel$cycleNum==i,] %>% select(-cycleNum)
 

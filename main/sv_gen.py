@@ -1,4 +1,4 @@
-" Evolutionary Model of Structural Variation (SVGen); Author: Samuel Winnall "
+" Evolutionary Model of Structural Variation (SVGen); Author: SamaxDSBel Winnall "
 
 ################################# comments ###################################
 
@@ -58,6 +58,7 @@ class cirosPlot():
 
     def deletions(self, nodes, cycleID, dest):
         coveredNodes = []
+        nDel = [ [0,0] for i in range(22)]
 
         for i in range(len(nodes)):
             nodeID = nodes[i].get("nodeID")
@@ -91,16 +92,19 @@ class cirosPlot():
                     extra    = 'svtype=DEL'
                     cycleNum  = cycleID
 
+                happ = nodes[nodeID].get("haplotype")
+                nDel[chr1-1][happ] += 1
+
                 # write to csv
                 with open('../output/0' +  str(dest) + '/sv_data.tsv', 'a', newline='') as file:
                     writer = csv.writer(file, delimiter = '\t')
                     writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2,	extra, cycleNum])
 
-        print(coveredNodes)
-        return
+        return nDel
 
     def insertions(self, nodes, cycleID, dest):
         coveredNodes = []
+        nIns = [ [0,0] for i in range(22)]
 
         for i in range(len(nodes)):
             nodeID = nodes[i].get("nodeID")
@@ -126,15 +130,19 @@ class cirosPlot():
                         extra    = 'svtype=INS'
                         cycleNum  = cycleID
 
+                        happ = nodes[nodeID].get("haplotype")
+                        nIns[chr1-1][happ] += 1
+
                         # write to csv
                         with open('../output/0' +  str(dest) + '/sv_data.tsv', 'a', newline='') as file:
                             writer = csv.writer(file, delimiter = '\t')
                             writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2,	extra, cycleNum])
 
-        return
+        return nIns
 
     def inversions(self, nodes, cycleID, dest, chromLengths):
         coveredNodes = []
+        nInv = [ [0,0] for i in range(22)]
 
         for i in range(len(nodes)):
             nodeID = nodes[i].get("nodeID")
@@ -157,6 +165,9 @@ class cirosPlot():
                         extra    = 'svtype=INV'
                         cycleNum  = cycleID
 
+                        happ = nodes[nodeID].get("haplotype")
+                        nInv[chr1-1][happ] += 1
+
                         # write to csv
                         with open('../output/0' +  str(dest) + '/sv_data.tsv', 'a', newline='') as file:
                             writer = csv.writer(file, delimiter = '\t')
@@ -172,6 +183,9 @@ class cirosPlot():
                     strand2  = '+'
                     extra    = 'svtype=INV'
                     cycleNum  = cycleID
+
+                    happ = nodes[nodeID].get("haplotype")
+                    nInv[chr1-1][happ] += 1
 
                     # write to csv
                     with open('../output/0' +  str(dest) + '/sv_data.tsv', 'a', newline='') as file:
@@ -189,11 +203,15 @@ class cirosPlot():
                     extra    = 'svtype=INV'
                     cycleNum  = cycleID
 
+                    happ = nodes[nodeID].get("haplotype")
+                    nInv[chr1-1][happ] += 1
+
                     # write to csv
                     with open('../output/0' +  str(dest) + '/sv_data.tsv', 'a', newline='') as file:
                         writer = csv.writer(file, delimiter = '\t')
                         writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2,	extra, cycleNum])
-        return
+
+        return nInv
 
     def duplications(self, nodes, cycleID, dest, nChroms, chromLengths, cn_df, num, size):
 
@@ -203,7 +221,7 @@ class cirosPlot():
             nodeID = nodes[i].get("nodeID")
             coveredNodes.append(nodeID)
 
-            if nodes[nodeID].get("type") == 'pTel':# and nodes[nodeID].get("cellID") == 1:
+            if nodes[nodeID].get("type") == 'pTel': # and nodes[nodeID].get("cellID") == 1:
                 chr1     = nodes[nodeID].get("chromID")
                 start    = 0
                 end      = nodes[nodeID].get("position")
@@ -275,16 +293,12 @@ class cirosPlot():
                 for segment in range( initPosIdx, finalPosIdx, 1 ):
                     cn_df[chr1-1].get(hap)[segment][2] = cn
 
-
-        # code for merging segments of same cn
-
-
         # code for printing out cn_df to tsv file
         for i in range(nChroms):
             for j in range(num[i]):
 
                 chr1     = i+1
-                start    = cn_df[i].get('A')[j][0] # 'B' would be equivalent
+                start    = cn_df[i].get('A')[j][0]
                 end      = cn_df[i].get('A')[j][1]
 
                 cnA      = cn_df[i].get('A')[j][2]
@@ -298,7 +312,7 @@ class cirosPlot():
                     writer = csv.writer(file, delimiter = '\t')
                     writer.writerow([chr1, start, end, cn_hap, cycleNum])
 
-        return
+        return cn_df
 
 calcSVs = cirosPlot(0,0,'+',0,0,'+',0,0,0)
 
@@ -363,10 +377,10 @@ class CheckBool():
 ################################ functions ###################################
 
 
-def generateDSBs(mu):
+def generateDSBs(maxDSB):
 
-    nDSB = int(random.randint(0,mu))
-    #nDSB = int( np.random.poisson(mu, 1) )
+    nDSB = int(random.randint(0,maxDSB))
+    #nDSB = int( np.random.poisson(maxDSB, 1) )
 
     return nDSB
 
@@ -475,7 +489,7 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,firstEvent,chromMat):
     # non initial event
     elif firstEvent == False and nDSB > 0:
 
-        # assumed no cn is greater than 5 in simulation
+        # assumed no cn is greater than 5 in simaxDSBlation
         cnidList   = [i for i in range(1,5)]
 
         # assign cn info for newly appended junctions
@@ -709,7 +723,7 @@ def g1(nodes, lmbda):
 
 
     print('M Connections\n')
-    # list available mutant connections
+    # list available maxDSBtant connections
     lM = []
     for i in range(len(nodes)):
         if nodes[i].get("cn") > 0 and nodes[i].get("M") == 'none':
@@ -809,7 +823,7 @@ def connectedPathConstruction(nodes,pathList):
         telCondition = True
         while telCondition:
 
-            # check next connection (Mutant)
+            # check next connection (maxDSBtant)
             if nodes[nodeID].get("M") != 'none':
                 nodeID = int(nodes[nodeID].get("M"))
                 temp.append(nodeID)
@@ -845,7 +859,7 @@ def connectedPathConstruction(nodes,pathList):
                 else:
                     telCondition = CheckBool.TelCheck(nodes,nodeID)
 
-            # no mutant connection; path unconnected & irrelevant
+            # no maxDSBtant connection; path unconnected & irrelevant
             else:
                 temp.clear()
                 break
@@ -1314,7 +1328,7 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
                     # debugging
                     print("Next connection (M): %s" %nodeID)
 
-                # if no mutant connection, reached other junction
+                # if no maxDSBtant connection, reached other junction
                 else:
                     subPathCondition = False
 
@@ -1419,7 +1433,98 @@ def cnProfiles(nChroms, chromLengths):
     return cn_df, num, size
 
 
-def analysis(nodes, cycleID, dest, mu, lmbda, nCycles, chromLengths, nDSB, cn_df, num, size, nChroms):
+def sumStats(nodes, nChroms, dest, nDel, nIns, nInv, cn_df):
+
+    ## code for nbp
+    # create data frame
+    nbp = [ [0,0] for i in range(nChroms)]
+
+    # count number of junctions per chrom per haplotype
+    for i in range(len(nodes)):
+
+        chrom = nodes[i].get("chromID")
+        happ  = nodes[i].get("haplotype")
+        nbp[chrom-1][happ] += 1
+
+    # nbp = nJ * 1/2
+    #for i in range(nChroms):
+    #    nbp[i][0] = nbp[i][0] * 0.5
+    #    nbp[i][1] = nbp[i][0] * 0.5
+
+
+    ## code for merging segments for oscillating cn statistic
+    # create merged data frame
+    cn_df_merged = [{} for i in range(nChroms)]
+
+    # initialise data frame
+    for i in range(nChroms):
+
+        # construct lists for appending
+        cn_df_merged[i]['A'] = []
+        cn_df_merged[i]['B'] = []
+
+        # A haplotype
+        for j in range(len(cn_df[i].get("A"))):
+            if j == 0:
+                seg_start = cn_df[i].get("A")[j][0]
+                seg_cn    = cn_df[i].get("A")[j][2]
+
+            elif j != 0 and cn_df[i].get("A")[j][2] == seg_cn and j != len(cn_df_merged[i]):
+                pass
+
+            elif j != 0 and cn_df[i].get("A")[j][2] != seg_cn and j != len(cn_df_merged[i]):
+                seg_end = cn_df[i].get("A")[j-1][1]
+                cn_df_merged[i]["A"].append( [seg_start, seg_end, seg_cn] )
+
+                seg_start = cn_df[i].get("A")[j][0]
+                seg_cn    = cn_df[i].get("A")[j][2]
+
+            elif j != 0 and cn_df[i].get("A")[j][2] != seg_cn and j == len(cn_df_merged[i]):
+                seg_end = cn_df[i].get("A")[j-1][1]
+                cn_df_merged[i]["A"].append( [seg_start, seg_end, seg_cn] )
+
+        # B haplotype
+        for j in range(len(cn_df[i].get("B"))):
+            if j == 0:
+                seg_start = cn_df[i].get("B")[j][0]
+                seg_cn    = cn_df[i].get("B")[j][2]
+
+            elif j != 0 and cn_df[i].get("B")[j][2] == seg_cn and j != len(cn_df_merged[i]):
+                pass
+
+            elif j != 0 and cn_df[i].get("B")[j][2] != seg_cn and j != len(cn_df_merged[i]):
+                seg_end = cn_df[i].get("B")[j-1][1]
+                cn_df_merged[i]['B'].append( [seg_start, seg_end, seg_cn] )
+
+                seg_start = cn_df[i].get("B")[j][0]
+                seg_cn    = cn_df[i].get("B")[j][2]
+
+            elif j != 0 and cn_df[i].get("B")[j][2] != seg_cn and j == len(cn_df_merged[i]):
+                seg_end = cn_df[i].get("B")[j-1][1]
+                cn_df_merged[i]['B'].append( [seg_start, seg_end, seg_cn] )
+
+    # calculate nOsc
+    nOsc = [ [0,0] for i in range(22)]
+    for i in range(nChroms):
+        # populating by haplotype
+        for j in range(2):
+            if j == 0:
+                nOsc[i][j] = len(cn_df_merged[i].get("A"))
+            elif j == 1:
+                nOsc[i][j] = len(cn_df_merged[i].get("B"))
+
+
+    # print summary statistics
+    for i in range(nChroms):
+        for j in range(2):
+
+            with open('../output/0' +  str(dest) + '/sumStats.tsv', 'a', newline='') as file:
+                writer = csv.writer(file, delimiter = '\t')
+                writer.writerow([i+1, j, nbp[i][j], nOsc[i][j], nDel[i][j], nIns[i][j], nInv[i][j]])
+    return
+
+
+def analysis(nodes, cycleID, dest, maxDSB, lmbda, nCycles, chromLengths, nDSB, cn_df, num, size, nChroms):
 
     if cycleID == 0:
 
@@ -1434,14 +1539,21 @@ def analysis(nodes, cycleID, dest, mu, lmbda, nCycles, chromLengths, nDSB, cn_df
     if cycleID == 1:
         with open('../output/0' +  str(dest) + '/parameters.tsv', 'w', newline='') as file:
             writer = csv.writer(file, delimiter = '\t')
-            writer.writerow(["mu", "lmbda", "nCycles"])
+            writer.writerow(["maxDSB", "lmbda", "nCycles"])
             writer.writerow([len(nodes)/2, lmbda, nCycles])
 
+        with open('../output/0' +  str(dest) + '/sumStats.tsv', 'w', newline='') as file:
+            writer = csv.writer(file, delimiter = '\t')
+            writer.writerow(["chr", "haplo", "nJ", "nOsc", "nDel", "nIns", "nInv"])
+
     # analyse data for SVs
-    calcSVs.deletions(nodes,cycleID,dest)
-    calcSVs.insertions(nodes,cycleID,dest)
-    calcSVs.inversions(nodes,cycleID,dest,chromLengths)
-    calcSVs.duplications(nodes,cycleID,dest,nChroms,chromLengths,cn_df,num,size)
+    nDel  = calcSVs.deletions(nodes,cycleID,dest)
+    nIns  = calcSVs.insertions(nodes,cycleID,dest)
+    nInv  = calcSVs.inversions(nodes,cycleID,dest,chromLengths)
+    cn_df = calcSVs.duplications(nodes,cycleID,dest,nChroms,chromLengths,cn_df,num,size)
+
+    if cycleID == 1:
+        sumStats(nodes, nChroms, dest, nDel, nIns, nInv, cn_df)
 
     return
 
@@ -1479,7 +1591,7 @@ def main():
             chromMat[i] = p2
 
     # parameters
-    mu      = 10   # 0 < nDSBs < mu
+    maxDSB  = 40   # 0 < nDSBs < maxDSB
     lmbda   = 5    # max number of unrepaired segments a cell can handle
     nCycles = 2    # number of cell cycles
 
@@ -1492,7 +1604,7 @@ def main():
         nodes.sort(key = lambda x:x['nodeID'] )
 
         # generate breakpoints
-        nDSB = generateDSBs(mu)
+        nDSB = generateDSBs(maxDSB)
         print("Cycle: %d; Number of DSBs: %d" %(cycleID, nDSB))
 
 
@@ -1544,7 +1656,7 @@ def main():
 
 
             # open output file for writing SV data
-            analysis(nodes, cycleID, dest, mu, lmbda, nCycles, chromLengths, nDSB, cn_df, num, size, nChroms)
+            analysis(nodes, cycleID, dest, maxDSB, lmbda, nCycles, chromLengths, nDSB, cn_df, num, size, nChroms)
 
 
             # clear cn data frame
