@@ -726,7 +726,7 @@ def g1(nodes, lmbda):
     # list available maxDSBtant connections
     lM = []
     for i in range(len(nodes)):
-        if nodes[i].get("cn") > 0 and nodes[i].get("M") == 'none':
+        if nodes[i].get("cn") > 0 and nodes[i].get("M") == 'none' and nodes[i].get("cellID") == 1:
             lM.append(nodes[i].get("nodeID"))
 
 
