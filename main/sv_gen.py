@@ -376,13 +376,53 @@ class CheckBool():
 
 ################################ functions ###################################
 
-
 def generateDSBs(maxDSB):
 
     nDSB = int(random.randint(0,maxDSB))
-    #nDSB = int( np.random.poisson(maxDSB, 1) )
 
     return nDSB
+
+
+def matPref(matType, nChroms):
+    # chromMat is a probability matrix for selecting chromosomes
+
+    if matType == 'random':
+        chromMat = [ 1/nChroms for i in range(nChroms)]
+
+    elif matType == 'biased':
+        chromMat = [0 for i in range(nChroms)]
+        nBiasedChroms = random.randint(1,3)
+        selectedChromosomes = np.random.choice([i for i in range(nChroms)], nBiasedChroms, replace = False)
+
+        p0 = 0.667
+        p1 = p0/nBiasedChroms
+        p2 = (1-p0)/(nChroms-nBiasedChroms)
+
+        for i in range(nChroms):
+            if i in selectedChromosomes:
+                chromMat[i] = p1
+            else:
+                chromMat[i] = p2
+
+    elif matType == 'fixed':
+        chromMat = [0 for i in range(nChroms)]
+        # same probability bias as before for reproducibility
+        # choose target chromosomes, -1 for index
+        g1 = 3; g2 = 5
+        selectedChromosomes = [g1-1, g2-1]
+        nBiasedChroms = len(selectedChromosomes)
+
+        p0 = 0.667
+        p1 = p0/nBiasedChroms
+        p2 = (1-p0)/(nChroms-nBiasedChroms)
+
+        for i in range(nChroms):
+            if i in selectedChromosomes:
+                chromMat[i] = p1
+            else:
+                chromMat[i] = p2
+
+    return chromMat
 
 
 def generateNodes(nodes,nDSB,nChroms,chromLengths,firstEvent,chromMat):
@@ -729,10 +769,13 @@ def g1(nodes, lmbda):
         if nodes[i].get("cn") > 0 and nodes[i].get("M") == 'none' and nodes[i].get("cellID") == 1:
             lM.append(nodes[i].get("nodeID"))
 
-
+    print(lM)
     # repairs breaks until endCondition is met
     endCondition = True
     while endCondition == True:
+
+        if len(lM) < 2:
+            break
 
         ## start at random junction
         startNode = int(np.random.choice(lM, 1))
@@ -1446,11 +1489,6 @@ def sumStats(nodes, nChroms, dest, nDel, nIns, nInv, cn_df):
         happ  = nodes[i].get("haplotype")
         nbp[chrom-1][happ] += 1
 
-    # nbp = nJ * 1/2
-    #for i in range(nChroms):
-    #    nbp[i][0] = nbp[i][0] * 0.5
-    #    nbp[i][1] = nbp[i][0] * 0.5
-
 
     ## code for merging segments for oscillating cn statistic
     # create merged data frame
@@ -1537,10 +1575,17 @@ def analysis(nodes, cycleID, dest, maxDSB, lmbda, nCycles, chromLengths, nDSB, c
             writer.writerow(["chr", "start", "end", "extra", "cycleNum"])
 
     if cycleID == 1:
+
+        # total number of junctions present in cell
+        nJ = 0
+        for i in range(len(nodes)):
+            if nodes[i].get("cellID") == 1:
+                nJ += 1
+
         with open('../output/0' +  str(dest) + '/parameters.tsv', 'w', newline='') as file:
             writer = csv.writer(file, delimiter = '\t')
-            writer.writerow(["maxDSB", "lmbda", "nCycles"])
-            writer.writerow([len(nodes)/2, lmbda, nCycles])
+            writer.writerow(["nJ", "lmbda", "nCycles"])
+            writer.writerow([nJ, lmbda, nCycles])
 
         with open('../output/0' +  str(dest) + '/sumStats.tsv', 'w', newline='') as file:
             writer = csv.writer(file, delimiter = '\t')
@@ -1576,19 +1621,10 @@ def main():
         centromerePos.append( chromLengths[1][length] / 2 )
 
     # define matrix preferencing chromosomes
-    chromMat = [0 for i in range(nChroms)]
-    nBiasedChroms = random.randint(1,3)
-    selectedChromosomes = np.random.choice([i for i in range(nChroms)], nBiasedChroms, replace = False)
-
-    p0 = 0.66
-    p1 = p0/nBiasedChroms
-    p2 = (1-p0)/(nChroms-nBiasedChroms)
-
-    for i in range(nChroms):
-        if i in selectedChromosomes:
-            chromMat[i] = p1
-        else:
-            chromMat[i] = p2
+    #matType = 'random'
+    #matType = 'biased'
+    matType = 'fixed'
+    chromMat = matPref(matType, nChroms)
 
     # parameters
     maxDSB  = 40   # 0 < nDSBs < maxDSB

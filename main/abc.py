@@ -1,4 +1,4 @@
-" Approximate Bayesian Computation Analysis; Author: SanDSBel Winnall "
+" Approximate Bayesian Computation Analysis; Author: Samuel Winnall "
 
 ################################### Notes #####################################
 
@@ -26,52 +26,29 @@ def copy(src, dest):
     return
 
 
-def readCN(nChroms):
-
-    # read SVGen copy number info
-    r_cn_TSV = '../output/00' + '/cn_data.tsv'
-    cn_df = pd.read_csv(r_cn_TSV, sep="\t")
-
-
-    # define list of chromosomes
-    cnInfo = [ [] for i in range(nChroms)]
-
-
-    # store cn tuple info for each chromosome
-    for i in range(len(cn_df)):
-        # 0: chromID
-        chromID = cn_df.iat[i,0]
-        # 1: startPos; 2: endPos; 3: CN
-        cnInfo[chromID-1].append(  (cn_df.iat[i,1], cn_df.iat[i,2], cn_df.iat[i,3])  ) # -1 for index
-
-
-    # sort cnInfo tuples by start position for each chromosome
-    for i in range(nChroms):
-        cnInfo[i].sort(key=lambda x:x[1])
-
+def readParams(nChroms):
 
     # read SVGen parameter info
     r_par_TSV = '../output/00' + '/parameters.tsv'
-    par_df = pd.read_csv(r_par_TSV, sep="\t")
-    nDSB  = par_df.iat[0,0]
-    lmbda = par_df.iat[0,1]
-    sigma = par_df.iat[0,2]
+    par_df  = pd.read_csv(r_par_TSV, sep="\t")
+    nJ      = par_df.iat[0,0]
+    lmbda   = par_df.iat[0,1]
+    nCycles = par_df.iat[0,2]
 
-    # print("\n %s\n" %cnInfo)
-    return cnInfo, nDSB, lmbda, sigma
+    return nJ, lmbda, nCycles
 
 
-def checkChromothripsis(cnInfo, nChroms, analysisType, dataType):
+def checkChromothripsis(nChroms, analysisType):
 
     ## Generate Summary Statistics from Criteria ##
     nOscCriteria = 10
     nbpCriteria  = 10
 
-    q = [[nOscCriteria, nbpCriteria] for i in range(2*nChroms)]
+    q = [[nOscCriteria, nbpCriteria] for i in range(nChroms)]
 
-    p = calc_p(cnInfo, nChroms, dataType)
+    p = calc_p(nChroms)
 
-    d = calc_d(nChroms, p, q, analysisType, dataType)
+    d = calc_d(nChroms, p, q, analysisType)
 
     return d
 
@@ -82,21 +59,26 @@ def calc_q(nChroms, dataType):
 
     if dataType == 'model':
 
-        q = [ [] for i in range(2*nChroms)]
+        q = [ [] for i in range(nChroms)]
 
         r_chromo_stats_TSV = '../input' + '/model_chromo.tsv'
         model_df = pd.read_csv(r_chromo_stats_TSV, sep="\t")
 
-        for i in range(2*nChroms):
+        ele = 0
+        for i in range(0,2*nChroms,2):
             # key: chr, haplo, nbp, nOsc, nDel, nIns, nInv
 
             # number of junctions
-            nJ = model_df.iat[i,2]
-            q[i].append(nJ)
+            nJ1 = model_df.iat[i,2]
+            nJ2 = model_df.iat[i+1,2]
+            q[ele].append( nJ1+nJ2 )
 
             # number of oscillating cn segments
-            nOsc = model_df.iat[i,3]
-            q[i].append(nOsc)
+            nOsc1 = model_df.iat[i,3]
+            nOsc2 = model_df.iat[i+1,3]
+            q[ele].append( nOsc1+nOsc2 )
+
+            ele += 1
 
 
     elif dataType == 'real':
@@ -117,66 +99,44 @@ def calc_q(nChroms, dataType):
             nOsc = real_df.iat[i,10]
             q[i].append(nOsc)
 
-
-    #print("\nq: \n%s\n" %q)
     return q
 
 
-def calc_p(cnInfo, nChroms, dataType):
+def calc_p(nChroms):
 
     ## Read Summary Statistics from Simulation ##
     r_sumStats_TSV = '../output/00' + '/sumStats.tsv'
     sumStat_df = pd.read_csv(r_sumStats_TSV, sep="\t")
 
-    if dataType == 'model':
+    p = [ [] for i in range(nChroms)]
 
-        # 2*nChroms for number of haplotypes
-        p = [ [] for i in range(2*nChroms)]
+    # average number of junctions as real data isn't haplotype specific
+    ele = 0
+    for i in range(0,2*nChroms,2):
+        # key: chr, haplo, nbp, nOsc, nDel, nIns, nInv
 
-        for i in range(0,2*nChroms,1):
-            # key: chr, haplo, nbp, nOsc, nDel, nIns, nInv
+        # number of junctions
+        nJ1 = sumStat_df.iat[i,2]
+        nJ2 = sumStat_df.iat[i+1,2]
+        p[ele].append( nJ1+nJ2 )
 
-            # number of junctions
-            nJ = sumStat_df.iat[i,2]
-            p[i].append(nJ)
+        # number of oscillating cn segments
+        nOsc1 = sumStat_df.iat[i,3]
+        nOsc2 = sumStat_df.iat[i+1,3]
+        p[ele].append( nOsc1+nOsc2 )
 
-            # number of oscillating cn segments
-            nOsc = sumStat_df.iat[i,3]
-            p[i].append(nOsc)
+        ele += 1
 
-    if dataType == 'real':
-
-        # average number of junctions as real data isn't haplotype specific
-        for i in range(0,2*nChroms,2):
-            # key: chr, haplo, nbp, nOsc, nDel, nIns, nInv
-
-            # number of junctions
-            nJ1 = sumStat_df.iat[i,2]
-            nJ2 = sumStat_df.iat[i+1,2]
-            p[i].append( (nJ1+nJ2)/2 )
-
-            # number of oscillating cn segments
-            nOsc1 = sumStat_df.iat[i,3]
-            nOsc2 = sumStat_df.iat[i+1,3]
-            p[i].append( (nOsc1+nOsc2)/2 )
-
-
-    #print("\np: \n%s\n" %p)
     return p
 
 
-def calc_d(nChroms, p, q, analysisType, dataType):
+def calc_d(nChroms, p, q, analysisType):
     ## Generate Distance ##
 
-    if dataType == 'model':
-        gma = 2*nChroms
-    elif dataType == 'real':
-        gma = nChroms
-
-    d = [ [] for i in range(gma)]
+    d = [ [] for i in range(nChroms)]
 
     # for each chromosome generate the distance between each summary statistic
-    for i in range(gma):
+    for i in range(nChroms):
         x = 0
         for j in range(len(p[i])):
 
@@ -197,8 +157,8 @@ def calc_d(nChroms, p, q, analysisType, dataType):
     return d
 
 
-def acceptReject(d, nDSB, lmbda, sigma, nChroms):
-    # scans d; if any chromosome is within acceptable range then sinDSBlation
+def acceptReject(d, nJ, lmbda, nCycles, nChroms):
+    # scans d; if any chromosome is within acceptable range then simulation
     # parameters and d are saved in memory
 
     outcome    = False
@@ -209,7 +169,6 @@ def acceptReject(d, nDSB, lmbda, sigma, nChroms):
             chromCount += 1
             outcome = True
 
-    #print("distance: %s" %d)
     print("number of chromosomes affected: %s" %chromCount)
     return outcome
 
@@ -220,10 +179,10 @@ def analysis(mem):
     for i in range(len(mem)):
         dsbData.append( mem[i][1] )
 
-    dsb_df = pd.DataFrame(dsbData, columns=['nDSB'])
+    dsb_df = pd.DataFrame(dsbData, columns=['nJ'])
     print('total number of dsbs per successful simulation: \n%s' %dsb_df)
 
-    sns_plot = sns.violinplot(y="nDSB", data=dsb_df)
+    sns_plot = sns.violinplot(y="nJ", data=dsb_df)
     plt.savefig("../output/00/violinplot.png")
 
     return
@@ -232,12 +191,12 @@ def analysis(mem):
 def main():
 
     # outline purpose of program
-    analysisType = 'determine_params'
-    # analysisType = 'check_chromothripsis'
+    #analysisType = 'determine_params'
+    analysisType = 'check_chromothripsis'
 
     # state type of data being read
     dataType = 'model'
-    # dataType = 'real'
+    #dataType = 'real'
 
     # define number of chromosomes
     nChroms = 22
@@ -250,29 +209,28 @@ def main():
     dest = '../output/00'
     copy(src,dest)
 
-    # run sinDSBlation N times
-    N = 100
-
+    # run simulation N times
+    N = 10000
     for i in range(N):
 
         # generate SVs
         sv_gen.main()
 
         # read copy number info
-        cnInfo, nDSB, lmbda, sigma = readCN(nChroms)
+        nJ, lmbda, nCycles = readParams(nChroms)
 
 
         if analysisType == 'check_chromothripsis':
 
             # generate distance to SS
-            d = checkChromothripsis(cnInfo, nChroms, analysisType, dataType)
+            d = checkChromothripsis(nChroms, analysisType)
 
             # determine validity of simulation
-            outcome = acceptReject(d, nDSB, lmbda, sigma, nChroms)
+            outcome = acceptReject(d, nJ, lmbda, nCycles, nChroms)
 
-            # append sinDSBlation info to memory
+            # append simulation info to memory
             if outcome == True:
-                mem.append( (d, nDSB, lmbda, sigma) )
+                mem.append( (d, nJ, lmbda, nCycles) )
                 print("Chromothripsis generated, d = %s." %min(d))
                 sys.exit()
 
@@ -283,23 +241,22 @@ def main():
             q = calc_q(nChroms, dataType)
 
             # current simulation summary statistics
-            p = calc_p(cnInfo, nChroms, dataType)
+            p = calc_p(nChroms)
 
             # distance between statistics
-            d = calc_d(nChroms, p, q, analysisType, dataType)
+            d = calc_d(nChroms, p, q, analysisType)
 
             # determine validity of simulation
-            outcome = acceptReject(d, nDSB, lmbda, sigma, nChroms)
+            outcome = acceptReject(d, nJ, lmbda, nCycles, nChroms)
 
-            # append sinDSBlation info to memory
+            # append simulation info to memory
             if outcome == True:
-                mem.append( (d, nDSB, lmbda, sigma) )
+                mem.append( (d, nJ, lmbda, nCycles) )
 
-
-        # clear variables
-        p.clear()
-        q.clear()
-        d.clear()
+            # clear variables
+            p.clear()
+            q.clear()
+            d.clear()
 
     print("number of accepted simulations: %s" %(len(mem)/N))
 
