@@ -1,0 +1,26 @@
+import(methods)
+
+import(S4Vectors)
+
+importFrom(stats, setNames)
+
+import(BiocGenerics)
+
+import(IRanges)
+
+import(GenomicRanges)
+
+import(MASS)
+
+import(ggplot2)
+
+import(grid)
+
+import(gridExtra)
+
+export(shatterseek,SVs,CNVsegs,plot_chromothripsis)
+
+exportClasses(
+	SVs,CNVsegs,chromoth
+)
+

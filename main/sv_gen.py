@@ -43,9 +43,10 @@ class cirosPlot():
     strand2  = '+'
     extra    = 0
     hap      = 0
-    cycleNum  = 0
+    cycleNum = 0
+    SVtype   = 0
 
-    def __init__(self, chr1, coord1, strand1, chr2, coord2, strand2, extra, hap, cycleNum):
+    def __init__(self, chr1, coord1, strand1, chr2, coord2, strand2, extra, hap, cycleNum, SVtype):
         self.chr1
         self.coord1
         self.strand1
@@ -55,6 +56,7 @@ class cirosPlot():
         self.extra
         self.hap
         self.cycleNum
+        self.SVtype
 
     def deletions(self, nodes, cycleID, dest):
         coveredNodes = []
@@ -80,7 +82,8 @@ class cirosPlot():
                         coord2   = coord1
                         strand2  = '-'
                         extra    = 'svtype=DEL'
-                        cycleNum  = cycleID
+                        cycleNum = cycleID
+                        SVtype   = 'DEL'
 
                 elif nodes[nodeID].get("type") != 'nonTel':
                     chr1     = nodes[nodeID].get("chromID")
@@ -90,15 +93,22 @@ class cirosPlot():
                     coord2   = coord1
                     strand2  = '-'
                     extra    = 'svtype=DEL'
-                    cycleNum  = cycleID
+                    cycleNum = cycleID
+                    SVtype   = 'DEL'
 
                 happ = nodes[nodeID].get("haplotype")
                 nDel[chr1-1][happ] += 1
 
                 # write to csv
-                with open('../output/0' +  str(dest) + '/sv_data.tsv', 'a', newline='') as file:
+                with open('../output/circos/sv_data.tsv', 'a', newline='') as file:
                     writer = csv.writer(file, delimiter = '\t')
                     writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2,	extra, cycleNum])
+
+                # write to tsv - for ShatterSeek
+                if cycleNum == 1:
+                    with open('../output/ShatterSeek/data/SVData.tsv', 'a', newline='') as file:
+                            writer = csv.writer(file, delimiter = '\t')
+                            writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2, SVtype])
 
         return nDel
 
@@ -128,15 +138,22 @@ class cirosPlot():
                         coord2   = nodes[ int(nodes[nodeID].get("M")) ].get("position")
                         strand2  = '+'
                         extra    = 'svtype=INS'
-                        cycleNum  = cycleID
+                        cycleNum = cycleID
+                        SVtype   = 'INS'
 
                         happ = nodes[nodeID].get("haplotype")
                         nIns[chr1-1][happ] += 1
 
                         # write to csv
-                        with open('../output/0' +  str(dest) + '/sv_data.tsv', 'a', newline='') as file:
+                        with open('../output/circos/sv_data.tsv', 'a', newline='') as file:
                             writer = csv.writer(file, delimiter = '\t')
                             writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2,	extra, cycleNum])
+
+                        # write to tsv - for ShatterSeek
+                        if cycleNum == 1:
+                            with open('../output/ShatterSeek/data/SVData.tsv', 'a', newline='') as file:
+                                writer = csv.writer(file, delimiter = '\t')
+                                writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2, SVtype])
 
         return nIns
 
@@ -163,15 +180,22 @@ class cirosPlot():
                         coord2   = nodes[ int(nodes[nodeID].get("WT")) ].get("position")
                         strand2  = '+'
                         extra    = 'svtype=INV'
-                        cycleNum  = cycleID
+                        cycleNum = cycleID
+                        SVtype   = 'INV'
 
                         happ = nodes[nodeID].get("haplotype")
                         nInv[chr1-1][happ] += 1
 
                         # write to csv
-                        with open('../output/0' +  str(dest) + '/sv_data.tsv', 'a', newline='') as file:
+                        with open('../output/circos/sv_data.tsv', 'a', newline='') as file:
                             writer = csv.writer(file, delimiter = '\t')
                             writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2,	extra, cycleNum])
+
+                        # write to tsv - for ShatterSeek
+                        if cycleNum == 1:
+                            with open('../output/ShatterSeek/data/SVData.tsv', 'a', newline='') as file:
+                                writer = csv.writer(file, delimiter = '\t')
+                                writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2, SVtype])
 
                 elif nodes[i].get("type") == 'pTel':
 
@@ -183,14 +207,21 @@ class cirosPlot():
                     strand2  = '+'
                     extra    = 'svtype=INV'
                     cycleNum  = cycleID
+                    SVtype   = 'INV'
 
                     happ = nodes[nodeID].get("haplotype")
                     nInv[chr1-1][happ] += 1
 
                     # write to csv
-                    with open('../output/0' +  str(dest) + '/sv_data.tsv', 'a', newline='') as file:
+                    with open('../output/circos/sv_data.tsv', 'a', newline='') as file:
                         writer = csv.writer(file, delimiter = '\t')
                         writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2,	extra, cycleNum])
+
+                    # write to tsv - for ShatterSeek
+                    if cycleNum == 1:
+                        with open('../output/ShatterSeek/data/SVData.tsv', 'a', newline='') as file:
+                            writer = csv.writer(file, delimiter = '\t')
+                            writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2, SVtype])
 
                 elif nodes[i].get("type") == 'qTel':
 
@@ -202,14 +233,21 @@ class cirosPlot():
                     strand2  = '+'
                     extra    = 'svtype=INV'
                     cycleNum  = cycleID
+                    SVtype   = 'INV'
 
                     happ = nodes[nodeID].get("haplotype")
                     nInv[chr1-1][happ] += 1
 
                     # write to csv
-                    with open('../output/0' +  str(dest) + '/sv_data.tsv', 'a', newline='') as file:
+                    with open('../output/circos/sv_data.tsv', 'a', newline='') as file:
                         writer = csv.writer(file, delimiter = '\t')
                         writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2,	extra, cycleNum])
+
+                    # write to tsv - for ShatterSeek
+                    if cycleNum == 1:
+                        with open('../output/ShatterSeek/data/SVData.tsv', 'a', newline='') as file:
+                            writer = csv.writer(file, delimiter = '\t')
+                            writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2, SVtype])
 
         return nInv
 
@@ -303,18 +341,24 @@ class cirosPlot():
 
                 cnA      = cn_df[i].get('A')[j][2]
                 cnB      = cn_df[i].get('B')[j][2]
-                cn_hap = "cn={'1': {'A': %s, 'B': %s}}" %(cnA,cnB)
+                cn_hap = "cn={'%s': {'A': %s, 'B': %s}}" %(cnA+cnB,cnA,cnB)
 
                 cycleNum = cycleID
 
-                # write to csv
-                with open('../output/0' +  str(dest) + '/cn_data.tsv', 'a', newline='') as file:
+                # write to tsv - for circos
+                with open('../output/circos/cn_data.tsv', 'a', newline='') as file:
                     writer = csv.writer(file, delimiter = '\t')
                     writer.writerow([chr1, start, end, cn_hap, cycleNum])
 
+                # write to tsv - for ShatterSeek
+                if cycleNum == 1:
+                    with open('../output/shatterseek/data/CNData.tsv', 'a', newline='') as file:
+                        writer = csv.writer(file, delimiter = '\t')
+                        writer.writerow([chr1, start, end, cnA+cnB])
+
         return cn_df
 
-calcSVs = cirosPlot(0,0,'+',0,0,'+',0,0,0)
+calcSVs = cirosPlot(0,0,'+',0,0,'+',0,0,0,0)
 
 
 class CheckBool():
@@ -1556,7 +1600,7 @@ def sumStats(nodes, nChroms, dest, nDel, nIns, nInv, cn_df):
     for i in range(nChroms):
         for j in range(2):
 
-            with open('../output/0' +  str(dest) + '/sumStats.tsv', 'a', newline='') as file:
+            with open('../output/sw_out/sumStats.tsv', 'a', newline='') as file:
                 writer = csv.writer(file, delimiter = '\t')
                 writer.writerow([i+1, j, nbp[i][j], nOsc[i][j], nDel[i][j], nIns[i][j], nInv[i][j]])
     return
@@ -1566,11 +1610,11 @@ def analysis(nodes, cycleID, dest, maxDSB, lmbda, nCycles, chromLengths, nDSB, c
 
     if cycleID == 0:
 
-        with open('../output/0' +  str(dest) + '/sv_data.tsv', 'w', newline='') as file:
+        with open('../output/circos/sv_data.tsv', 'w', newline='') as file:
             writer = csv.writer(file, delimiter = '\t')
             writer.writerow(["chr1", "coord1", "strand1", "chr2", "coord2", "strand2",	"extra", "cycleNum"])
 
-        with open('../output/0' +  str(dest) + '/cn_data.tsv', 'w', newline='') as file:
+        with open('../output/circos/cn_data.tsv', 'w', newline='') as file:
             writer = csv.writer(file, delimiter = '\t')
             writer.writerow(["chr", "start", "end", "extra", "cycleNum"])
 
@@ -1582,14 +1626,23 @@ def analysis(nodes, cycleID, dest, maxDSB, lmbda, nCycles, chromLengths, nDSB, c
             if nodes[i].get("cellID") == 1:
                 nJ += 1
 
-        with open('../output/0' +  str(dest) + '/parameters.tsv', 'w', newline='') as file:
+        with open('../output/sw_out/parameters.tsv', 'w', newline='') as file:
             writer = csv.writer(file, delimiter = '\t')
             writer.writerow(["nJ", "lmbda", "nCycles"])
-            writer.writerow([nJ, lmbda, nCycles])
+            writer.writerow([nJ])
 
-        with open('../output/0' +  str(dest) + '/sumStats.tsv', 'w', newline='') as file:
+        with open('../output/sw_out/sumStats.tsv', 'w', newline='') as file:
             writer = csv.writer(file, delimiter = '\t')
             writer.writerow(["chr", "haplo", "nJ", "nOsc", "nDel", "nIns", "nInv"])
+
+        # for use of shatterseek chromothripsis determination
+        with open('../output/ShatterSeek/data/SVData.tsv', 'w', newline='') as file:
+            writer = csv.writer(file, delimiter = '\t')
+            writer.writerow(["chr1", "coord1", "strand1", "chr2", "coord2", "strand2",	"SVtype"])
+
+        with open('../output/ShatterSeek/data/CNData.tsv', 'w', newline='') as file:
+            writer = csv.writer(file, delimiter = '\t')
+            writer.writerow(["chr", "start", "end", "total_cn"])
 
     # analyse data for SVs
     nDel  = calcSVs.deletions(nodes,cycleID,dest)

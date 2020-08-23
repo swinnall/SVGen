@@ -25,11 +25,11 @@ def copy(src, dest):
             print('Directory not copied. Error: %s' % e)
     return
 
-
+# potentially don't need - just delete
 def readParams(nChroms):
 
     # read SVGen parameter info
-    r_par_TSV = '../output/00' + '/parameters.tsv'
+    r_par_TSV = '../output/sw_out' + '/parameters.tsv'
     par_df  = pd.read_csv(r_par_TSV, sep="\t")
     nJ      = par_df.iat[0,0]
     lmbda   = par_df.iat[0,1]
@@ -105,7 +105,7 @@ def calc_q(nChroms, dataType):
 def calc_p(nChroms):
 
     ## Read Summary Statistics from Simulation ##
-    r_sumStats_TSV = '../output/00' + '/sumStats.tsv'
+    r_sumStats_TSV = '../output/sw_out' + '/sumStats.tsv'
     sumStat_df = pd.read_csv(r_sumStats_TSV, sep="\t")
 
     p = [ [] for i in range(nChroms)]
@@ -147,7 +147,7 @@ def calc_d(nChroms, p, q, analysisType):
                 # if p is greater than threshold, zero distance therefore undo addition
                 if analysisType == 'check_chromothripsis' and p[i][j] > q[i][j]:
                     x -= (q[i][j] - p[i][j])**2
-                # parameter inference requires normal euclidian distance
+                # parameter inference requires normal euclidian distance so no else
 
             else:
                 x += 10
@@ -157,7 +157,7 @@ def calc_d(nChroms, p, q, analysisType):
     return d
 
 
-def acceptReject(d, nJ, lmbda, nCycles, nChroms):
+def acceptReject(d, nChroms):
     # scans d; if any chromosome is within acceptable range then simulation
     # parameters and d are saved in memory
 
@@ -183,7 +183,7 @@ def analysis(mem):
     print('total number of dsbs per successful simulation: \n%s' %dsb_df)
 
     sns_plot = sns.violinplot(y="nJ", data=dsb_df)
-    plt.savefig("../output/00/violinplot.png")
+    plt.savefig("../output/sw_out/violinplot.png")
 
     return
 
@@ -216,17 +216,13 @@ def main():
         # generate SVs
         sv_gen.main()
 
-        # read copy number info
-        nJ, lmbda, nCycles = readParams(nChroms)
-
-
         if analysisType == 'check_chromothripsis':
 
             # generate distance to SS
             d = checkChromothripsis(nChroms, analysisType)
 
             # determine validity of simulation
-            outcome = acceptReject(d, nJ, lmbda, nCycles, nChroms)
+            outcome = acceptReject(d, nChroms)
 
             # append simulation info to memory
             if outcome == True:
@@ -247,12 +243,12 @@ def main():
             d = calc_d(nChroms, p, q, analysisType)
 
             # determine validity of simulation
-            outcome = acceptReject(d, nJ, lmbda, nCycles, nChroms)
+            outcome = acceptReject(d, nChroms)
 
             # append simulation info to memory
             if outcome == True:
-                mem.append( (d, nJ, lmbda, nCycles) )
-
+                mem.append( (d, p[2]) )
+                
             # clear variables
             p.clear()
             q.clear()
