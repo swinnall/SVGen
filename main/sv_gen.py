@@ -351,10 +351,10 @@ class cirosPlot():
                     writer.writerow([chr1, start, end, cn_hap, cycleNum])
 
                 # write to tsv - for ShatterSeek
-                if cycleNum == 1:
-                    with open('../output/shatterseek/data/CNData.tsv', 'a', newline='') as file:
-                        writer = csv.writer(file, delimiter = '\t')
-                        writer.writerow([chr1, start, end, cnA+cnB])
+                #if cycleNum == 1:
+                #    with open('../output/shatterseek/data/CNData.tsv', 'a', newline='') as file:
+                #        writer = csv.writer(file, delimiter = '\t')
+                #        writer.writerow([chr1, start, end, cnA+cnB])
 
         return cn_df
 
@@ -1535,74 +1535,89 @@ def sumStats(nodes, nChroms, dest, nDel, nIns, nInv, cn_df):
 
 
     ## code for merging segments for oscillating cn statistic
-    # create merged data frame
-    cn_df_merged = [{} for i in range(nChroms)]
+    # create merged haplotype data frame
+    cn_temp = {}
 
-    # initialise data frame
+    # create merged cn data frame
+    cn_df_merged = {}
+
+    # merge haplotypes
     for i in range(nChroms):
 
-        # construct lists for appending
-        cn_df_merged[i]['A'] = []
-        cn_df_merged[i]['B'] = []
+        # initialise list
+        cn_temp[str(i+1)] = []
 
-        # A haplotype
+        # populate list with total cn
         for j in range(len(cn_df[i].get("A"))):
-            if j == 0:
-                seg_start = cn_df[i].get("A")[j][0]
-                seg_cn    = cn_df[i].get("A")[j][2]
 
-            elif j != 0 and cn_df[i].get("A")[j][2] == seg_cn and j != len(cn_df_merged[i]):
+            s = cn_df[i].get("A")[j][0]
+            e = cn_df[i].get("A")[j][1]
+            c = cn_df[i].get("A")[j][2] + cn_df[i].get("B")[j][2]
+
+            cn_temp[str(i+1)].append( [s, e, c] )
+
+            with open('../output/shatterseek/data/CNData.tsv', 'a', newline='') as file:
+                writer = csv.writer(file, delimiter = '\t')
+                writer.writerow([i+1, s, e, c])
+
+
+    # merge cn - think error here somewhere...
+    for i in range(nChroms):
+
+        # construct list for appending
+        idx = str(i+1)
+        cn_df_merged[str(i+1)] = []
+
+        # merge segments of same cn
+        for j in range(len(cn_temp.get(idx))):
+            if j == 0:
+                seg_start = cn_temp.get(idx)[j][0]
+                seg_cn    = cn_temp.get(idx)[j][2]
+
+            # same copy number
+            elif j != 0 and cn_temp.get(idx)[j][2] == seg_cn and j != len(cn_df_merged.get(idx)):
                 pass
 
-            elif j != 0 and cn_df[i].get("A")[j][2] != seg_cn and j != len(cn_df_merged[i]):
-                seg_end = cn_df[i].get("A")[j-1][1]
-                cn_df_merged[i]["A"].append( [seg_start, seg_end, seg_cn] )
+            # non final element, diff cn
+            elif j != 0 and cn_temp.get(idx)[j][2] != seg_cn and j != len(cn_df_merged.get(idx)):
+                seg_end = cn_temp.get(idx)[j-1][1]
+                cn_df_merged[idx].append( [seg_start, seg_end, seg_cn] )
 
-                seg_start = cn_df[i].get("A")[j][0]
-                seg_cn    = cn_df[i].get("A")[j][2]
+                seg_start = cn_temp.get(idx)[j][0]
+                seg_cn    = cn_temp.get(idx)[j][2]
 
-            elif j != 0 and cn_df[i].get("A")[j][2] != seg_cn and j == len(cn_df_merged[i]):
-                seg_end = cn_df[i].get("A")[j-1][1]
-                cn_df_merged[i]["A"].append( [seg_start, seg_end, seg_cn] )
+            # last element, diff
+            elif j != 0 and cn_temp.get(idx)[j][2] != seg_cn and j == len(cn_df_merged.get(idx)):
+                seg_end = cn_temp.get(idx)[j-1][1]
+                cn_df_merged[idx].append( [seg_start, seg_end, seg_cn] )
 
-        # B haplotype
-        for j in range(len(cn_df[i].get("B"))):
-            if j == 0:
-                seg_start = cn_df[i].get("B")[j][0]
-                seg_cn    = cn_df[i].get("B")[j][2]
-
-            elif j != 0 and cn_df[i].get("B")[j][2] == seg_cn and j != len(cn_df_merged[i]):
-                pass
-
-            elif j != 0 and cn_df[i].get("B")[j][2] != seg_cn and j != len(cn_df_merged[i]):
-                seg_end = cn_df[i].get("B")[j-1][1]
-                cn_df_merged[i]['B'].append( [seg_start, seg_end, seg_cn] )
-
-                seg_start = cn_df[i].get("B")[j][0]
-                seg_cn    = cn_df[i].get("B")[j][2]
-
-            elif j != 0 and cn_df[i].get("B")[j][2] != seg_cn and j == len(cn_df_merged[i]):
-                seg_end = cn_df[i].get("B")[j-1][1]
-                cn_df_merged[i]['B'].append( [seg_start, seg_end, seg_cn] )
 
     # calculate nOsc
-    nOsc = [ [0,0] for i in range(22)]
+    nOsc = [ 0 for i in range(nChroms)]
     for i in range(nChroms):
-        # populating by haplotype
-        for j in range(2):
-            if j == 0:
-                nOsc[i][j] = len(cn_df_merged[i].get("A"))
-            elif j == 1:
-                nOsc[i][j] = len(cn_df_merged[i].get("B"))
+        nOsc[i] = len(cn_df_merged.get(str(i+1)))
 
 
-    # print summary statistics
+    # write to tsv - for ShatterSeek
     for i in range(nChroms):
-        for j in range(2):
+        idx = str(i+1)
+        for j in range(len(cn_df_merged.get(idx))):
 
-            with open('../output/sw_out/sumStats.tsv', 'a', newline='') as file:
+            chr1   = i+1
+            start  = cn_df_merged.get(idx)[j][0]
+            end    = cn_df_merged.get(idx)[j][1]
+            cn_tot = cn_df_merged.get(idx)[j][2]
+
+            with open('../output/shatterseek/data/CNData.tsv', 'a', newline='') as file:
                 writer = csv.writer(file, delimiter = '\t')
-                writer.writerow([i+1, j, nbp[i][j], nOsc[i][j], nDel[i][j], nIns[i][j], nInv[i][j]])
+                writer.writerow([chr1, start, end, cn_tot])
+
+
+    # write summary statistics for sw_out inference
+    for i in range(nChroms):
+        with open('../output/sw_out/sumStats.tsv', 'a', newline='') as file:
+            writer = csv.writer(file, delimiter = '\t')
+            writer.writerow([i+1, j, nbp[i][0]+nbp[i][1], nOsc[i], nDel[i][0]+nDel[i][1], nIns[i][0]+nIns[i][1], nInv[i][0]+nInv[i][1]])
     return
 
 
@@ -1628,7 +1643,7 @@ def analysis(nodes, cycleID, dest, maxDSB, lmbda, nCycles, chromLengths, nDSB, c
 
         with open('../output/sw_out/parameters.tsv', 'w', newline='') as file:
             writer = csv.writer(file, delimiter = '\t')
-            writer.writerow(["nJ", "lmbda", "nCycles"])
+            writer.writerow(["nJ"])
             writer.writerow([nJ])
 
         with open('../output/sw_out/sumStats.tsv', 'w', newline='') as file:

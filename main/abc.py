@@ -25,17 +25,15 @@ def copy(src, dest):
             print('Directory not copied. Error: %s' % e)
     return
 
-# potentially don't need - just delete
+
 def readParams(nChroms):
 
     # read SVGen parameter info
     r_par_TSV = '../output/sw_out' + '/parameters.tsv'
     par_df  = pd.read_csv(r_par_TSV, sep="\t")
     nJ      = par_df.iat[0,0]
-    lmbda   = par_df.iat[0,1]
-    nCycles = par_df.iat[0,2]
 
-    return nJ, lmbda, nCycles
+    return nJ
 
 
 def checkChromothripsis(nChroms, analysisType):
@@ -209,6 +207,9 @@ def main():
     dest = '../output/00'
     copy(src,dest)
 
+    # import simulation parameters - total number of junctions
+    nJ = readParams(nChroms)
+
     # run simulation N times
     N = 10000
     for i in range(N):
@@ -226,7 +227,7 @@ def main():
 
             # append simulation info to memory
             if outcome == True:
-                mem.append( (d, nJ, lmbda, nCycles) )
+                mem.append( (d, nJ) )
                 print("Chromothripsis generated, d = %s." %min(d))
                 sys.exit()
 
@@ -248,7 +249,7 @@ def main():
             # append simulation info to memory
             if outcome == True:
                 mem.append( (d, p[2]) )
-                
+
             # clear variables
             p.clear()
             q.clear()
