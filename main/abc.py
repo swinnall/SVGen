@@ -39,8 +39,8 @@ def readParams(nChroms):
 def checkChromothripsis(nChroms, analysisType):
 
     ## Generate Summary Statistics from Criteria ##
-    nOscCriteria = 10
-    nbpCriteria  = 10
+    nOscCriteria = 6
+    nbpCriteria  = 6
 
     q = [[nOscCriteria, nbpCriteria] for i in range(nChroms)]
 
@@ -103,27 +103,23 @@ def calc_q(nChroms, dataType):
 def calc_p(nChroms):
 
     ## Read Summary Statistics from Simulation ##
-    r_sumStats_TSV = '../output/sw_out' + '/sumStats.tsv'
+    r_sumStats_TSV = '../output/sw_out/sumStats.tsv'
     sumStat_df = pd.read_csv(r_sumStats_TSV, sep="\t")
 
     p = [ [] for i in range(nChroms)]
 
     # average number of junctions as real data isn't haplotype specific
     ele = 0
-    for i in range(0,2*nChroms,2):
+    for i in range(nChroms):
         # key: chr, haplo, nbp, nOsc, nDel, nIns, nInv
 
         # number of junctions
-        nJ1 = sumStat_df.iat[i,2]
-        nJ2 = sumStat_df.iat[i+1,2]
-        p[ele].append( nJ1+nJ2 )
+        nJ = sumStat_df.iat[i,2]
+        p[i].append( nJ )
 
         # number of oscillating cn segments
-        nOsc1 = sumStat_df.iat[i,3]
-        nOsc2 = sumStat_df.iat[i+1,3]
-        p[ele].append( nOsc1+nOsc2 )
-
-        ele += 1
+        nOsc = sumStat_df.iat[i,3]
+        p[i].append( nOsc )
 
     return p
 

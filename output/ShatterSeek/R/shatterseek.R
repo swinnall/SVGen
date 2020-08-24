@@ -9,15 +9,22 @@
 #' @return an instance of the class 'SVs' that contains SV data. Required format by the function shatterseek
 #' @export
 
+#setwd("documents/Github/sv-model/output/ShatterSeek/R")
+#SVData_svgen <- read.delim("SVData.tsv", sep="\t")
+#CNData_svgen <- read.delim("CNData.tsv", sep="\t")
+
+#print(head(SVData))
+#print(head(CNData))
+
 SVs <- setClass("SVs",
 				representation(
-							   chrom1="character",
-							   pos1 = "numeric",
-							   chrom2 = "character",
-							   pos2 = "numeric",
-							   SVtype = "character",
-							   strand1 = "character",
-							   strand2 = "character"
+							   chrom1 ="character", #as.character(SVData$chrom1), #
+							   pos1   ="numeric", #as.numeric(SVData$pos1), 
+							   chrom2 ="character", #as.character(SVData$chrom2), 
+							   pos2   ="numeric", #as.numeric(SVData$pos2), 
+							   SVtype ="character", #as.character(SVData$SVtype), 
+							   strand1="character", #as.character(SVData$strand1), 
+							   strand2="character" #as.character(SVData$strand2) 
 							   #numSV = "numeric"
 							   ) 
 				)
@@ -77,11 +84,11 @@ setAs("SVs","data.frame",function(from, to){
 #' @export
 CNVsegs = setClass("CNVsegs",
 				   representation(
-								  chrom="character",
-								  start = "numeric",
-								  end="numeric",
-								  total_cn = "numeric",
-								  numSegs = "numeric"
+								  chrom="character", #as.character(CNData$chromosome), 
+								  start="numeric", #as.numeric(CNData$start), 
+								  end  ="numeric", #as.numeric(CNData$end), 
+								  total_cn="numeric" #as.numeric(CNData$total_cn) #
+								  #numSegs = "numeric"
 								  )
 				   )
 
@@ -246,3 +253,4 @@ shatterseek = function(SV.sample,seg.sample,min.Size=1){
 	cat("Successfully finished!\n")
 	return(out)
 }
+

@@ -1,0 +1,19 @@
+
+# import data
+SVData_svgen <- read.delim("SVData.tsv", sep="\t")
+CNData_svgen <- read.delim("CNData.tsv", sep="\t")
+
+
+# load data 
+SV_data <- SVs(chrom1=as.character(SVData_svgen$chrom1), 
+				pos1=as.numeric(SVData_svgen$start1),
+				chrom2=as.character(SVData_svgen$chrom2), 
+				pos2=as.numeric(SVData_svgen$end2), 
+				SVtype=as.character(SVData_svgen$svclass), 
+				strand1=as.character(SVData_svgen$strand1), 
+				strand2=as.character(SVData_svgen$strand2))
+				
+CN_data <- CNVsegs(chrom=as.character(CNData_svgen$chromosome), 
+					start=CNData_svgen$start,
+                    end=CNData_svgen$end,
+                    total_cn=CNData_svgen$total_cn)
