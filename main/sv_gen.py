@@ -356,7 +356,7 @@ class cirosPlot():
                 #        writer = csv.writer(file, delimiter = '\t')
                 #        writer.writerow([chr1, start, end, cnA+cnB])
 
-        return cn_df
+        return cn_df, num
 
 calcSVs = cirosPlot(0,0,'+',0,0,'+',0,0,0,0)
 
@@ -1520,7 +1520,7 @@ def cnProfiles(nChroms, chromLengths):
     return cn_df, num, size
 
 
-def sumStats(nodes, nChroms, dest, nDel, nIns, nInv, cn_df):
+def sumStats(nodes, nChroms, dest, nDel, nIns, nInv, cn_df, num):
 
     ## code for nJ, the number of junctions
     # create data frame
@@ -1548,17 +1548,17 @@ def sumStats(nodes, nChroms, dest, nDel, nIns, nInv, cn_df):
         cn_temp[str(i+1)] = []
 
         # populate list with total cn
-        for j in range(len(cn_df[i].get("A"))):
+        for j in range(num[i]):
 
-            s = cn_df[i].get("A")[j][0]
-            e = cn_df[i].get("A")[j][1]
-            c = cn_df[i].get("A")[j][2] + cn_df[i].get("B")[j][2]
+            s = cn_df[i].get('A')[j][0]
+            e = cn_df[i].get('A')[j][1]
+            c = cn_df[i].get('A')[j][2] + cn_df[i].get('B')[j][2]
 
             cn_temp[str(i+1)].append( [s, e, c] )
 
-            with open('../output/shatterseek/data/CNData.tsv', 'a', newline='') as file:
-                writer = csv.writer(file, delimiter = '\t')
-                writer.writerow([i+1, s, e, c])
+            #with open('../output/shatterseek/data/CNData.tsv', 'a', newline='') as file:
+            #    writer = csv.writer(file, delimiter = '\t')
+            #    writer.writerow([i+1, s, e, c])
 
 
     # merge cn - think error here somewhere...
@@ -1569,29 +1569,40 @@ def sumStats(nodes, nChroms, dest, nDel, nIns, nInv, cn_df):
         cn_df_merged[str(i+1)] = []
 
         # merge segments of same cn
-        for j in range(len(cn_temp.get(idx))):
+        for j in range(num[i]):
+            # firt element
             if j == 0:
                 seg_start = cn_temp.get(idx)[j][0]
                 seg_cn    = cn_temp.get(idx)[j][2]
 
-            # same copy number
-            elif j != 0 and cn_temp.get(idx)[j][2] == seg_cn and j != len(cn_df_merged.get(idx)):
+            # same cn, non final element
+            elif j != 0 and j != num[i]-1 and cn_temp.get(idx)[j][2] == seg_cn :
                 pass
 
-            # non final element, diff cn
-            elif j != 0 and cn_temp.get(idx)[j][2] != seg_cn and j != len(cn_df_merged.get(idx)):
+            # cn change, non final element
+            elif j != 0 and j != num[i]-1 and cn_temp.get(idx)[j][2] != seg_cn :
+                # complete segment and store
                 seg_end = cn_temp.get(idx)[j-1][1]
                 cn_df_merged[idx].append( [seg_start, seg_end, seg_cn] )
 
+                # start next segment
                 seg_start = cn_temp.get(idx)[j][0]
                 seg_cn    = cn_temp.get(idx)[j][2]
 
-            # last element, diff
-            elif j != 0 and cn_temp.get(idx)[j][2] != seg_cn and j == len(cn_df_merged.get(idx)):
+            # same cn, final element
+            elif j != 0 and j == num[i]-1 and cn_temp.get(idx)[j][2] == seg_cn:
+                # complete segment and store
                 seg_end = cn_temp.get(idx)[j-1][1]
                 cn_df_merged[idx].append( [seg_start, seg_end, seg_cn] )
 
+            # cn change, final element
+            elif j != 0 and j == num[i]-1 and cn_temp.get(idx)[j][2] != seg_cn :
+                # complete segment and store
+                seg_end = cn_temp.get(idx)[j-1][1]
+                cn_df_merged[idx].append( [seg_start, seg_end, seg_cn] )
+    #print(cn_df_merged)
 
+    
     # calculate nOsc
     nOsc = [ 0 for i in range(nChroms)]
     for i in range(nChroms):
@@ -1663,10 +1674,10 @@ def analysis(nodes, cycleID, dest, maxDSB, lmbda, nCycles, chromLengths, nDSB, c
     nDel  = calcSVs.deletions(nodes,cycleID,dest)
     nIns  = calcSVs.insertions(nodes,cycleID,dest)
     nInv  = calcSVs.inversions(nodes,cycleID,dest,chromLengths)
-    cn_df = calcSVs.duplications(nodes,cycleID,dest,nChroms,chromLengths,cn_df,num,size)
+    cn_df, num = calcSVs.duplications(nodes,cycleID,dest,nChroms,chromLengths,cn_df,num,size)
 
     if cycleID == 1:
-        sumStats(nodes, nChroms, dest, nDel, nIns, nInv, cn_df)
+        sumStats(nodes, nChroms, dest, nDel, nIns, nInv, cn_df, num)
 
     return
 
