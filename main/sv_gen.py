@@ -79,7 +79,7 @@ class cirosPlot():
                         coord1   = nodes[nodeID].get("position")
                         strand1  = '+'
                         chr2     = chr1
-                        coord2   = coord1
+                        coord2   = coord1+1
                         strand2  = '-'
                         extra    = 'svtype=DEL'
                         cycleNum = cycleID
@@ -90,7 +90,7 @@ class cirosPlot():
                     coord1   = nodes[nodeID].get("position")
                     strand1  = '+'
                     chr2     = chr1
-                    coord2   = coord1
+                    coord2   = coord1+1
                     strand2  = '-'
                     extra    = 'svtype=DEL'
                     cycleNum = cycleID
@@ -135,7 +135,7 @@ class cirosPlot():
                         coord1   = nodes[nodeID].get("position")
                         strand1  = '+'
                         chr2     = nodes[ int(nodes[nodeID].get("M")) ].get("chromID")
-                        coord2   = nodes[ int(nodes[nodeID].get("M")) ].get("position")
+                        coord2   = nodes[ int(nodes[nodeID].get("M")) ].get("position")+1
                         strand2  = '+'
                         extra    = 'svtype=INS'
                         cycleNum = cycleID
