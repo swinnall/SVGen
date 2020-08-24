@@ -58,60 +58,6 @@ class cirosPlot():
         self.cycleNum
         self.SVtype
 
-    def deletions(self, nodes, cycleID, dest):
-        coveredNodes = []
-        nDel = [ [0,0] for i in range(22)]
-
-        for i in range(len(nodes)):
-            nodeID = nodes[i].get("nodeID")
-            coveredNodes.append(nodeID)
-
-            if nodes[nodeID].get("cn") == 0:
-
-                # prevents repeats of nonTel segments
-                # will have repeats of duplicated deleted segments
-                # second condition as nodes can be placed on deleted paths
-                if nodes[nodeID].get("type") == 'nonTel' and nodes[nodeID].get("WT") != 'none':
-                    adjID = int(nodes[nodeID].get("WT"))
-
-                    if adjID not in coveredNodes:
-                        chr1     = nodes[nodeID].get("chromID")
-                        coord1   = nodes[nodeID].get("position")
-                        strand1  = '+'
-                        chr2     = chr1
-                        coord2   = coord1+1
-                        strand2  = '-'
-                        extra    = 'svtype=DEL'
-                        cycleNum = cycleID
-                        SVtype   = 'DEL'
-
-                elif nodes[nodeID].get("type") != 'nonTel':
-                    chr1     = nodes[nodeID].get("chromID")
-                    coord1   = nodes[nodeID].get("position")
-                    strand1  = '+'
-                    chr2     = chr1
-                    coord2   = coord1+1
-                    strand2  = '-'
-                    extra    = 'svtype=DEL'
-                    cycleNum = cycleID
-                    SVtype   = 'DEL'
-
-                happ = nodes[nodeID].get("haplotype")
-                nDel[chr1-1][happ] += 1
-
-                # write to csv
-                with open('../output/circos/sv_data.tsv', 'a', newline='') as file:
-                    writer = csv.writer(file, delimiter = '\t')
-                    writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2,	extra, cycleNum])
-
-                # write to tsv - for ShatterSeek
-                if cycleNum == 1:
-                    with open('../output/ShatterSeek/R/SVData.tsv', 'a', newline='') as file:
-                            writer = csv.writer(file, delimiter = '\t')
-                            writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2, SVtype])
-
-        return nDel
-
     def insertions(self, nodes, cycleID, dest):
         coveredNodes = []
         nIns = [ [0,0] for i in range(22)]
@@ -252,7 +198,6 @@ class cirosPlot():
         return nInv
 
     def duplications(self, nodes, cycleID, dest, nChroms, chromLengths, cn_df, num, size):
-
         # code for populating cn_df based on nodes
         coveredNodes = []
         for i in range(len(nodes)):
@@ -341,20 +286,13 @@ class cirosPlot():
 
                 cnA      = cn_df[i].get('A')[j][2]
                 cnB      = cn_df[i].get('B')[j][2]
-                cn_hap = "cn={'%s': {'A': %s, 'B': %s}}" %(cnA+cnB,cnA,cnB)
-
+                cn_hap   = "cn={'%s': {'A': %s, 'B': %s}}" %(cnA+cnB,cnA,cnB)
                 cycleNum = cycleID
 
-                # write to tsv - for circos
+                # write cn data - for circos
                 with open('../output/circos/cn_data.tsv', 'a', newline='') as file:
                     writer = csv.writer(file, delimiter = '\t')
                     writer.writerow([chr1, start, end, cn_hap, cycleNum])
-
-                # write to tsv - for ShatterSeek
-                #if cycleNum == 1:
-                #    with open('../output/shatterseek/data/CNData.tsv', 'a', newline='') as file:
-                #        writer = csv.writer(file, delimiter = '\t')
-                #        writer.writerow([chr1, start, end, cnA+cnB])
 
         return cn_df, num
 
@@ -1499,7 +1437,7 @@ def cnProfiles(nChroms, chromLengths):
     num = [0 for i in range(nChroms)]
 
     # determine segment size
-    size = int(10E6)
+    size = int(50E5)
 
     # initialise data frame
     for i in range(nChroms):
@@ -1520,7 +1458,9 @@ def cnProfiles(nChroms, chromLengths):
     return cn_df, num, size
 
 
-def sumStats(nodes, nChroms, dest, nDel, nIns, nInv, cn_df, num):
+def sumStats(nodes, nChroms, dest, nIns, nInv, cn_df, num, size, cycleID):
+    # summary statistic
+    nDel = [ 0 for i in range(nChroms)]
 
     ## code for nJ, the number of junctions
     # create data frame
@@ -1556,12 +1496,7 @@ def sumStats(nodes, nChroms, dest, nDel, nIns, nInv, cn_df, num):
 
             cn_temp[str(i+1)].append( [s, e, c] )
 
-            #with open('../output/shatterseek/data/CNData.tsv', 'a', newline='') as file:
-            #    writer = csv.writer(file, delimiter = '\t')
-            #    writer.writerow([i+1, s, e, c])
 
-
-    # merge cn - think error here somewhere...
     for i in range(nChroms):
 
         # construct list for appending
@@ -1600,7 +1535,49 @@ def sumStats(nodes, nChroms, dest, nDel, nIns, nInv, cn_df, num):
                 # complete segment and store
                 seg_end = cn_temp.get(idx)[j-1][1]
                 cn_df_merged[idx].append( [seg_start, seg_end, seg_cn] )
-    #print(cn_df_merged)
+
+
+    #### writing sv data deletions and duplications for shatterseek || as well as circos deletions
+    for i in range(nChroms):
+        idx = str(i+1)
+        for j in range(len(cn_df_merged[idx])):
+
+            # if deletion on a haplotype
+            if cn_df_merged.get(idx)[j][2] < 2:
+
+                # get start location of segment
+                s1 = cn_df_merged.get(idx)[j][0]
+                e1 = cn_df_merged.get(idx)[j][1]
+
+                with open('../output/circos/sv_data.tsv', 'a', newline='') as file:
+                    writer = csv.writer(file, delimiter = '\t')
+                    # key: [chr, start, '+', chr, end, '-', 'svtype=DEL', cycleNum]
+                    writer.writerow([i+1, s1, '+', i+1, s1, '-', 'svtype=DEL', cycleID])
+
+                nDel[i] += 1
+
+
+            # write duplications - for shatterseek
+            if cn_df_merged.get(idx)[j][2] > 2 and cycleID == 1:
+
+                s1 = cn_df_merged.get(idx)[j][0]
+                e1 = cn_df_merged.get(idx)[j][1]
+
+                with open('../output/ShatterSeek/R/SVData.tsv', 'a', newline='') as file:
+                    writer = csv.writer(file, delimiter = '\t')
+                    # key: [chr1, start, '-', chr1, end, '+', "DUP"]
+                    writer.writerow([i+1, s1, '-', i+1, e1, '+', "DUP"])
+
+            # write deletions - for shatterseek
+            if cn_df_merged.get(idx)[j][2] < 2 and cycleID == 1:
+
+                s1 = cn_df_merged.get(idx)[j][0]
+                e1 = cn_df_merged.get(idx)[j][1]
+
+                with open('../output/ShatterSeek/R/SVData.tsv', 'a', newline='') as file:
+                    writer = csv.writer(file, delimiter = '\t')
+                    # key: [chr1, start, '+', chr1, end, '-', "DEL"]
+                    writer.writerow([i+1, s1, '+', i+1, e1, '-', "DEL"])
 
 
     # calculate nOsc
@@ -1628,14 +1605,13 @@ def sumStats(nodes, nChroms, dest, nDel, nIns, nInv, cn_df, num):
     for i in range(nChroms):
         with open('../output/sw_out/sumStats.tsv', 'a', newline='') as file:
             writer = csv.writer(file, delimiter = '\t')
-            writer.writerow([i+1, j, nbp[i][0]+nbp[i][1], nOsc[i], nDel[i][0]+nDel[i][1], nIns[i][0]+nIns[i][1], nInv[i][0]+nInv[i][1]])
+            writer.writerow([i+1, j, nbp[i][0]+nbp[i][1], nOsc[i], nDel[i], nIns[i][0]+nIns[i][1], nInv[i][0]+nInv[i][1], cycleID])
     return
 
 
 def analysis(nodes, cycleID, dest, maxDSB, lmbda, nCycles, chromLengths, nDSB, cn_df, num, size, nChroms):
 
     if cycleID == 0:
-
         with open('../output/circos/sv_data.tsv', 'w', newline='') as file:
             writer = csv.writer(file, delimiter = '\t')
             writer.writerow(["chr1", "coord1", "strand1", "chr2", "coord2", "strand2",	"extra", "cycleNum"])
@@ -1643,8 +1619,6 @@ def analysis(nodes, cycleID, dest, maxDSB, lmbda, nCycles, chromLengths, nDSB, c
         with open('../output/circos/cn_data.tsv', 'w', newline='') as file:
             writer = csv.writer(file, delimiter = '\t')
             writer.writerow(["chr", "start", "end", "extra", "cycleNum"])
-
-    if cycleID == 1:
 
         # total number of junctions present in cell
         nJ = 0
@@ -1659,7 +1633,9 @@ def analysis(nodes, cycleID, dest, maxDSB, lmbda, nCycles, chromLengths, nDSB, c
 
         with open('../output/sw_out/sumStats.tsv', 'w', newline='') as file:
             writer = csv.writer(file, delimiter = '\t')
-            writer.writerow(["chr", "haplo", "nJ", "nOsc", "nDel", "nIns", "nInv"])
+            writer.writerow(["chr", "haplo", "nJ", "nOsc", "nDel", "nIns", "nInv", "cycleNum"])
+
+    if cycleID == 1:
 
         # for use of shatterseek chromothripsis determination
         with open('../output/ShatterSeek/R/SVData.tsv', 'w', newline='') as file:
@@ -1671,13 +1647,11 @@ def analysis(nodes, cycleID, dest, maxDSB, lmbda, nCycles, chromLengths, nDSB, c
             writer.writerow(["chromosome", "start", "end", "total_cn"])
 
     # analyse data for SVs
-    nDel  = calcSVs.deletions(nodes,cycleID,dest)
     nIns  = calcSVs.insertions(nodes,cycleID,dest)
     nInv  = calcSVs.inversions(nodes,cycleID,dest,chromLengths)
     cn_df, num = calcSVs.duplications(nodes,cycleID,dest,nChroms,chromLengths,cn_df,num,size)
 
-    if cycleID == 1:
-        sumStats(nodes, nChroms, dest, nDel, nIns, nInv, cn_df, num)
+    sumStats(nodes, nChroms, dest, nIns, nInv, cn_df, num, size, cycleID)
 
     return
 
@@ -1701,8 +1675,8 @@ def main():
 
     # define matrix preferencing chromosomes
     #matType = 'random'
-    #matType = 'biased'
-    matType = 'fixed'
+    matType = 'biased'
+    #matType = 'fixed'
     chromMat = matPref(matType, nChroms)
 
     # parameters

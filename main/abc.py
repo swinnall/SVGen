@@ -39,8 +39,8 @@ def readParams(nChroms):
 def checkChromothripsis(nChroms, analysisType):
 
     ## Generate Summary Statistics from Criteria ##
-    nOscCriteria = 6
-    nbpCriteria  = 6
+    nOscCriteria = 8
+    nbpCriteria  = 8
 
     q = [[nOscCriteria, nbpCriteria] for i in range(nChroms)]
 
@@ -177,7 +177,7 @@ def analysis(mem):
     print('total number of dsbs per successful simulation: \n%s' %dsb_df)
 
     sns_plot = sns.violinplot(y="nJ", data=dsb_df)
-    plt.savefig("../output/sw_out/circos/plots/violinplot.png")
+    plt.savefig("../output/sw_out/circos/param_plots/violinplot.png")
 
     return
 

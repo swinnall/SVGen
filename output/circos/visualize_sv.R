@@ -56,7 +56,7 @@ plot_SV <- function(fname){
 
   for(i in 0:(tail(svs,n=1)[1,"cycleNum"])) {
 
-    fname <- paste0("plots/sv_data_", i, ".tsv")
+    fname <- paste0("sv_data_", i, ".tsv")
     outfile <- str_replace(fname, ".tsv", ".png")
     name <- ""
     png(outfile, height=600, width=600)
@@ -95,7 +95,7 @@ plot_CN_SV <- function(fsv, fcnv){
 
   for(i in 0:(tail(cnsel$cycleNum,1))) {
 
-    fname <- paste0("plots/cn_sv_data_", i, ".tsv")
+    fname <- paste0("cn_sv_data_", i, ".tsv")
     outfile <- str_replace(fname, ".tsv", ".png")
     name <- ""
     png(outfile, height=600, width=600)
@@ -114,8 +114,8 @@ plot_CN_SV <- function(fsv, fcnv){
 }
 
 
-fsv = "plots/sv_data.tsv"
+fsv = "sv_data.tsv"
 #plot_SV(fsv)
 
-fcnv = "plots/cn_data.tsv"
+fcnv = "cn_data.tsv"
 plot_CN_SV(fsv, fcnv)
