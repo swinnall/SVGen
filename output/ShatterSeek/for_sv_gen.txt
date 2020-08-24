@@ -1,4 +1,13 @@
 
+# install
+require(devtools)
+install_github("parklab/ShatterSeek")
+
+
+# load into session
+library(ShatterSeek)
+
+
 # import data
 SVData_svgen <- read.delim("SVData.tsv", sep="\t")
 CNData_svgen <- read.delim("CNData.tsv", sep="\t")
@@ -17,3 +26,49 @@ CN_data <- CNVsegs(chrom=as.character(CNData_svgen$chromosome),
 					start=CNData_svgen$start,
                     end=CNData_svgen$end,
                     total_cn=CNData_svgen$total_cn)
+                    
+                    
+# run ShatterSeek
+library(ShatterSeek)
+start_time <- Sys.time()
+chromothripsis <- shatterseek(SV.sample=SV_data, seg.sample=CN_data)
+
+end_time <- Sys.time()
+print(paste0("Running time (s): ",round(end_time - start_time,digits=2)))
+
+
+# print summary 
+print(head(chromothripsis@chromSummary))
+names(chromothripsis@detail)
+
+
+# plot chromothripsis 
+library(gridExtra)
+
+plots_chr3 = plot_chromothripsis(ShatterSeek_output = chromothripsis,chr = "3") plot_chr3 = arrangeGrob(plots_chr3[[1]],
+plots_chr3[[2]],
+plots_chr3[[3]],
+plots_chr3[[4]], nrow=4,ncol=1,heights=c(0.2,.4,.4,.4))
+plots_chr2 = plot_chromothripsis(ShatterSeek_output = chromothripsis,chr = "2") plot_chr2 = arrangeGrob(plots_chr2[[1]],
+                        plots_chr2[[2]],
+                        plots_chr2[[3]],
+                        plots_chr2[[4]],
+nrow=4,ncol=1,heights=c(0.2,.4,.4,.4))
+plots_chr21 = plot_chromothripsis(ShatterSeek_output = chromothripsis,chr = "21") plot_chr21 = arrangeGrob(plots_chr21[[1]],
+plots_chr21[[2]],
+plots_chr21[[3]],
+plots_chr21[[4]], nrow=4,ncol=1,heights=c(0.2,.4,.4,.4))
+plots_chrX = plot_chromothripsis(ShatterSeek_output = chromothripsis,chr = "X") plot_chrX = arrangeGrob(plots_chrX[[1]],
+                        plots_chrX[[2]],
+                        plots_chrX[[3]],
+                        plots_chrX[[4]],
+nrow=4,ncol=1,heights=c(0.2,.4,.4,.4))
+library(cowplot) plot_grid(plot_chr3,plot_chr2)
+
+
+
+
+
+
+
+

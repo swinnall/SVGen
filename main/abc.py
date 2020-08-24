@@ -177,7 +177,7 @@ def analysis(mem):
     print('total number of dsbs per successful simulation: \n%s' %dsb_df)
 
     sns_plot = sns.violinplot(y="nJ", data=dsb_df)
-    plt.savefig("../output/sw_out/violinplot.png")
+    plt.savefig("../output/sw_out/circos/plots/violinplot.png")
 
     return
 
