@@ -56,6 +56,28 @@ def checkChromothripsis(nChroms, analysisType):
     return d
 
 
+def calc_p(nChroms):
+
+    ## Read Summary Statistics from Simulation ##
+    r_sumStats_TSV = '../output/sumstats/sumStats_chrom.tsv'
+    sumStat_df = pd.read_csv(r_sumStats_TSV, sep="\t")
+
+    p = [ [] for i in range(nChroms)]
+
+    for i in range(nChroms):
+        # key: chr, nDSB, nOsc, nDel, nIns, nInv
+
+        # number of junctions
+        nDSB = sumStat_df.iat[i,1]
+        p[i].append( nDSB )
+
+        # number of oscillating cn segments
+        nOsc = sumStat_df.iat[i,2]
+        p[i].append( nOsc )
+
+    return p
+
+
 def calc_q(nChroms, dataType):
 
     ## SumStats obtained from valid chromothripsis
@@ -67,21 +89,16 @@ def calc_q(nChroms, dataType):
         r_chromo_stats_TSV = '../input/model_chromo.tsv'
         model_df = pd.read_csv(r_chromo_stats_TSV, sep="\t")
 
-        ele = 0
-        for i in range(0,2*nChroms,2):
-            # key: chr, haplo, nbp, nOsc, nDel, nIns, nInv
+        for i in range(nChroms):
+            # key: chr, nDSB, nOsc, nDel, nIns, nInv
 
-            # number of junctions
-            nDSB1 = model_df.iat[i,2]
-            nDSB2 = model_df.iat[i+1,2]
-            q[ele].append( nDSB1+nDSB2 )
+            # number of double strand breaks
+            nDSB = model_df.iat[i,1]
+            q[i].append( nDSB )
 
             # number of oscillating cn segments
-            nOsc1 = model_df.iat[i,3]
-            nOsc2 = model_df.iat[i+1,3]
-            q[ele].append( nOsc1+nOsc2 )
-
-            ele += 1
+            nOsc = model_df.iat[i,2]
+            q[i].append( nOsc )
 
 
     elif dataType == 'real':
@@ -103,28 +120,6 @@ def calc_q(nChroms, dataType):
             q[i].append(nOsc)
 
     return q
-
-
-def calc_p(nChroms):
-
-    ## Read Summary Statistics from Simulation ##
-    r_sumStats_TSV = '../output/sumstats/sumStats_chrom.tsv'
-    sumStat_df = pd.read_csv(r_sumStats_TSV, sep="\t")
-
-    p = [ [] for i in range(nChroms)]
-
-    for i in range(nChroms):
-        # key: chr, haplo, nbp, nOsc, nDel, nIns, nInv
-
-        # number of junctions
-        nDSB = sumStat_df.iat[i,2]
-        p[i].append( nDSB )
-
-        # number of oscillating cn segments
-        nOsc = sumStat_df.iat[i,3]
-        p[i].append( nOsc )
-
-    return p
 
 
 def calc_d(nChroms, p, q, analysisType):
@@ -217,7 +212,7 @@ def main():
     mem = []
 
     # run simulation N times
-    N = 10000
+    N = 100
     for i in range(N):
 
         # generate SVs

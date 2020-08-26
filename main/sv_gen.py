@@ -488,7 +488,7 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,firstEvent,chromMat,DSBmat):
         haplotype        = np.random.choice(hapChoice, 1)
 
         # update number of DSBs per chrom per haplotype
-        DSBmat[chromosomeTarget][haplotype] += 1
+        DSBmat[chromosomeTarget-1][haplotype[0]] += 1
 
         nodeData = {
             # identification:
@@ -1285,7 +1285,7 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos, DSBmat)
         newJuncList.append(uniqueID+1)
 
         # update the number of double strand breaks per chrom per haplotype
-        DSBmat[jChrom][nodes[nodeChoice].get("haplotype")] += 1
+        DSBmat[jChrom-1][nodes[nodeChoice].get("haplotype")] += 1
 
         # connect new junctions to path
         if segType == 'pTel':
@@ -1521,12 +1521,11 @@ def sumStats(nodes, nChroms, nIns, nInv, cn_df, num, size, cycleID, DSBmat):
         idx = str(i+1)
         for j in range(len(cn_df_merged[idx])):
 
-            # if deletion on a haplotype
+            # if deletion on a haplotype, cn < 2
             if cn_df_merged.get(idx)[j][2] < 2:
 
-                # get start location of segment
+                # get location:
                 s1 = cn_df_merged.get(idx)[j][0]
-                e1 = cn_df_merged.get(idx)[j][1]
 
                 # write SV deletions - for Circos (by haplotype)
                 # CN deletions/duplications written for Circos in circosPlot method
@@ -1535,6 +1534,7 @@ def sumStats(nodes, nChroms, nIns, nInv, cn_df, num, size, cycleID, DSBmat):
                     # key: [chr, start, '+', chr, end, '-', 'svtype=DEL', cycleNum]
                     writer.writerow([i+1, s1, '+', i+1, s1, '-', 'svtype=DEL', cycleID])
 
+                # number of deletions gets updated each time chrom is called (either hapA or hapB)
                 nDel[i] += 1
 
 
@@ -1584,16 +1584,28 @@ def sumStats(nodes, nChroms, nIns, nInv, cn_df, num, size, cycleID, DSBmat):
 
     # write summary statistics for sumstats inference
     for i in range(nChroms):
-        with open('../output/sumstats/sumStats.tsv', 'a', newline='') as file:
+        with open('../output/sumstats/sumStats_chrom.tsv', 'a', newline='') as file:
             writer = csv.writer(file, delimiter = '\t')
-            writer.writerow([i+1, j, DSBmat[i][0]+DSBmat[i][1], nOsc[i], nDel[i], nIns[i][0]+nIns[i][1], nInv[i][0]+nInv[i][1], cycleID])
+            writer.writerow([i+1, DSBmat[i][0]+DSBmat[i][1], nOsc[i], nDel[i], nIns[i][0]+nIns[i][1], nInv[i][0]+nInv[i][1]])
+
+    for i in range(nChroms):
+        DSB_tot  += (DSBmat[i][0]+DSBmat[i][1])
+        nDel_tot += nDel[i]
+        nIns_tot += (nIns[i][0]+nIns[i][1])
+        nInv_tot += (nInv[i][0]+nInv[i][1])
+
+    with open('../output/sumstats/sumStats_total.tsv', 'a', newline='') as file:
+        writer = csv.writer(file, delimiter = '\t')
+        writer.writerow([DSB_tot, nDel_tot, nIns_tot, nInv_tot])
 
     return
 
 
-def analysis(nodes, nCycles, cycleID, lmbda, nCycles, chromLengths, DSBmat, cn_df, num, size, nChroms):
+def analysis(nodes, nCycles, cycleID, lmbda, chromLengths, DSBmat, cn_df, num, size, nChroms):
 
+    # create files for writing to
     if cycleID == 0:
+
         with open('../output/circos/sv_data.tsv', 'w', newline='') as file:
             writer = csv.writer(file, delimiter = '\t')
             writer.writerow(["chr1", "coord1", "strand1", "chr2", "coord2", "strand2",	"extra", "cycleNum"])
@@ -1603,17 +1615,17 @@ def analysis(nodes, nCycles, cycleID, lmbda, nCycles, chromLengths, DSBmat, cn_d
             writer.writerow(["chr", "start", "end", "extra", "cycleNum"])
 
 
-    if cycleID == nCycles:
+    if cycleID == nCycles-1:
 
-        # summary statistics
-        with open('../output/sumstats/parameters.tsv', 'w', newline='') as file:
+        # summary statistics for the whole system
+        with open('../output/sumstats/sumStats_total.tsv', 'w', newline='') as file:
             writer = csv.writer(file, delimiter = '\t')
-            writer.writerow(["nJ"])
-            writer.writerow([nJ])
+            writer.writerow(["nDSB", "nDel", "nInv", "nIns"])
 
-        with open('../output/sumstats/sumStats.tsv', 'w', newline='') as file:
+        # summary statistics for each chromosome
+        with open('../output/sumstats/sumStats_chrom.tsv', 'w', newline='') as file:
             writer = csv.writer(file, delimiter = '\t')
-            writer.writerow(["chr", "haplo", "nJ", "nOsc", "nDel", "nIns", "nInv", "cycleNum"])
+            writer.writerow(["chr", "nDSB", "nOsc", "nDel", "nIns", "nInv"])
 
 
         # for use of shatterseek chromothripsis determination
@@ -1631,7 +1643,7 @@ def analysis(nodes, nCycles, cycleID, lmbda, nCycles, chromLengths, DSBmat, cn_d
     cn_df, num = calcSVs.duplications(nodes,cycleID,nChroms,chromLengths,cn_df,num,size)
 
 
-    if cycleID == nCycles:
+    if cycleID == nCycles-1:
         sumStats(nodes, nChroms, nIns, nInv, cn_df, num, size, cycleID, DSBmat)
 
     return
@@ -1727,7 +1739,7 @@ def main():
 
 
             # open output file for writing SV data
-            analysis(nodes, nCycles, cycleID, maxDSB, lmbda, nCycles, chromLengths, DSBmat, cn_df, num, size, nChroms)
+            analysis(nodes, nCycles, cycleID, lmbda, chromLengths, DSBmat, cn_df, num, size, nChroms)
 
 
             # clear cn data frame
