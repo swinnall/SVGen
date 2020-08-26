@@ -394,9 +394,9 @@ def cnProfiles(nChroms, chromLengths):
 ################################################################################
 ## Functions for biology
 
-def generateDSBs(maxDSB):
+def generateDSBs(minDSB, maxDSB):
 
-    nDSB = int(random.randint(0,maxDSB))
+    nDSB = int(random.randint(minDSB,maxDSB))
 
     return nDSB
 
@@ -411,7 +411,7 @@ def matPref(matType, nChroms):
     elif matType == 'biased':
         chromMat = [0 for i in range(nChroms)]
         # randomly select number of chromosomes to choose from
-        nBiasedChroms = random.randint(1,3)
+        nBiasedChroms = random.randint(1,1)
         # choose the chromosomes
         selectedChromosomes = np.random.choice([i for i in range(nChroms)], nBiasedChroms, replace = False)
 
@@ -1459,6 +1459,9 @@ def sumStats(nodes, nChroms, nIns, nInv, cn_df, num, size, cycleID, DSBmat):
     # initialisng deletions summary statistic
     nDel = [ 0 for i in range(nChroms)]
 
+    # initialisng duplications summary statistic
+    nDup = [ 0 for i in range(nChroms)]
+
     # merge haplotypes, maintain segment size
     for i in range(nChroms):
 
@@ -1537,6 +1540,10 @@ def sumStats(nodes, nChroms, nIns, nInv, cn_df, num, size, cycleID, DSBmat):
                 # number of deletions gets updated each time chrom is called (either hapA or hapB)
                 nDel[i] += 1
 
+            # number of duplications gets updated each time chrom is called (either hapA or hapB)
+            elif cn_df_merged.get(idx)[j][2] > 2:
+                nDup[i] += 1
+
 
             # write SV duplications - for shatterseek
             if cn_df_merged.get(idx)[j][2] > 2 and cycleID == 1:
@@ -1586,17 +1593,19 @@ def sumStats(nodes, nChroms, nIns, nInv, cn_df, num, size, cycleID, DSBmat):
     for i in range(nChroms):
         with open('../output/sumstats/sumStats_chrom.tsv', 'a', newline='') as file:
             writer = csv.writer(file, delimiter = '\t')
-            writer.writerow([i+1, DSBmat[i][0]+DSBmat[i][1], nOsc[i], nDel[i], nIns[i][0]+nIns[i][1], nInv[i][0]+nInv[i][1]])
+            writer.writerow([i+1, DSBmat[i][0]+DSBmat[i][1], nOsc[i], nDel[i], nIns[i][0]+nIns[i][1], nInv[i][0]+nInv[i][1], nDup[i]])
 
+    DSB_tot = 0; nDel_tot = 0; nIns_tot = 0; nInv_tot = 0; nDup_tot = 0
     for i in range(nChroms):
         DSB_tot  += (DSBmat[i][0]+DSBmat[i][1])
         nDel_tot += nDel[i]
         nIns_tot += (nIns[i][0]+nIns[i][1])
         nInv_tot += (nInv[i][0]+nInv[i][1])
+        nDup_tot += nDup[i]
 
     with open('../output/sumstats/sumStats_total.tsv', 'a', newline='') as file:
         writer = csv.writer(file, delimiter = '\t')
-        writer.writerow([DSB_tot, nDel_tot, nIns_tot, nInv_tot])
+        writer.writerow([DSB_tot, nDel_tot, nIns_tot, nInv_tot, nDup_tot, cycleID])
 
     return
 
@@ -1615,17 +1624,17 @@ def analysis(nodes, nCycles, cycleID, lmbda, chromLengths, DSBmat, cn_df, num, s
             writer.writerow(["chr", "start", "end", "extra", "cycleNum"])
 
 
-    if cycleID == nCycles-1:
+    if cycleID == 0: #nCycles-1:
 
         # summary statistics for the whole system
         with open('../output/sumstats/sumStats_total.tsv', 'w', newline='') as file:
             writer = csv.writer(file, delimiter = '\t')
-            writer.writerow(["nDSB", "nDel", "nInv", "nIns"])
+            writer.writerow(["nDSB", "nDel", "nInv", "nIns", "nDup", 'cycleID'])
 
         # summary statistics for each chromosome
         with open('../output/sumstats/sumStats_chrom.tsv', 'w', newline='') as file:
             writer = csv.writer(file, delimiter = '\t')
-            writer.writerow(["chr", "nDSB", "nOsc", "nDel", "nIns", "nInv"])
+            writer.writerow(["chr", "nDSB", "nOsc", "nDel", "nIns", "nInv", "nDup"])
 
 
         # for use of shatterseek chromothripsis determination
@@ -1643,8 +1652,8 @@ def analysis(nodes, nCycles, cycleID, lmbda, chromLengths, DSBmat, cn_df, num, s
     cn_df, num = calcSVs.duplications(nodes,cycleID,nChroms,chromLengths,cn_df,num,size)
 
 
-    if cycleID == nCycles-1:
-        sumStats(nodes, nChroms, nIns, nInv, cn_df, num, size, cycleID, DSBmat)
+    #if cycleID == nCycles-1:
+    sumStats(nodes, nChroms, nIns, nInv, cn_df, num, size, cycleID, DSBmat)
 
     return
 
@@ -1675,7 +1684,6 @@ def main():
     chromMat = matPref(matType, nChroms)
 
     # parameters
-    maxDSB  = 40   # 0 < nDSBs < maxDSB
     lmbda   = 5    # max number of unrepaired segments a cell can handle
     nCycles = 2    # number of cell cycles - make stochastic at some point
 
@@ -1686,73 +1694,77 @@ def main():
     for i in range(nCycles):
         print("\n############################ ")
 
+        # for selecting specific DSB ranges/values by cell cycle number
+        if cycleID == 0:
+            minDSB  = 15
+            maxDSB  = 15
+        else:
+            minDSB  = 15
+            maxDSB  = 15
+
         # generate breakpoints
-        nDSB = generateDSBs(maxDSB)
+        nDSB = generateDSBs(minDSB, maxDSB)
         print("Cycle: %d; Number of DSBs: %d" %(cycleID, nDSB))
 
 
-        if nDSB > 0:
-            count += 1
+        #if nDSB > 0:
+        count += 1
 
-            # needed for junction cn initialisation
-            if count == 1:
-                firstEvent = True
-            else: firstEvent = False
-
-
-            # initialises nodes dictionary
-            nodes, DSBmat = generateNodes(nodes, nDSB, nChroms, chromLengths, firstEvent, chromMat, DSBmat)
-            print("Total number of junctions in nucleus: %d\n" %len(nodes))
+        # needed for junction cn initialisation
+        if count == 1:
+            firstEvent = True
+        else: firstEvent = False
 
 
-            # define path ends
-            nodes = generateTelomeres(nodes)
+        # initialises nodes dictionary
+        nodes, DSBmat = generateNodes(nodes, nDSB, nChroms, chromLengths, firstEvent, chromMat, DSBmat)
+        print("Total number of junctions in nucleus: %d\n" %len(nodes))
 
 
-            # growth phase
-            nodes = g1(nodes, lmbda)
+        # define path ends
+        nodes = generateTelomeres(nodes)
 
 
-            # assign centromeres to segments
-            nodes = generateCentromeres(nodes, centromerePos)
+        # growth phase
+        nodes = g1(nodes, lmbda)
 
 
-            # path construction
-            pathList = connectedPathConstruction(nodes, pathList)
-            telomeric, nonTelomeric = unconnectedPathConstruction(nodes)
+        # assign centromeres to segments
+        nodes = generateCentromeres(nodes, centromerePos)
 
 
-            # synthesis & second growth phase
-            nodes, pathList = syn_g2(nodes, pathList, telomeric, nonTelomeric)
+        # path construction
+        pathList = connectedPathConstruction(nodes, pathList)
+        telomeric, nonTelomeric = unconnectedPathConstruction(nodes)
 
 
-            # path directionality
-            nodes = checkInv(nodes, pathList)
+        # synthesis & second growth phase
+        nodes, pathList = syn_g2(nodes, pathList, telomeric, nonTelomeric)
 
 
-            # mitosis phase
-            nodes, DSBmat = mitosis(nodes, pathList, cycleID, nCycles, centromerePos, DSBmat)
+        # path directionality
+        nodes = checkInv(nodes, pathList)
 
 
-            # initialise cn information
-            cn_df, num, size = cnProfiles(nChroms, chromLengths)
+        # mitosis phase
+        nodes, DSBmat = mitosis(nodes, pathList, cycleID, nCycles, centromerePos, DSBmat)
 
 
-            # open output file for writing SV data
-            analysis(nodes, nCycles, cycleID, lmbda, chromLengths, DSBmat, cn_df, num, size, nChroms)
+        # initialise cn information
+        cn_df, num, size = cnProfiles(nChroms, chromLengths)
 
 
-            # clear cn data frame
-            cn_df.clear()
-
-        else:
-            print("Exception, no available junctions.")
+        # open output file for writing SV data
+        analysis(nodes, nCycles, cycleID, lmbda, chromLengths, DSBmat, cn_df, num, size, nChroms)
 
 
+        # end of cycle cleaning:
         cycleID += 1
-        pathList.clear()
 
+        cn_df.clear()
+        pathList.clear()
     nodes.clear()
+
     print("\n~~ End of Simulation ~~\n")
     return
 

@@ -35,15 +35,16 @@ def readSumStatsTotal(nChroms):
     nDel      = par_df.iat[0,1]
     nInv      = par_df.iat[0,2]
     nIns      = par_df.iat[0,3]
+    nDup      = par_df.iat[0,4]
 
-    return nDSB, nDel, nInv, nIns
+    return nDSB, nDel, nInv, nIns, nDup
 
 
 def checkChromothripsis(nChroms, analysisType):
 
     ## Generate Summary Statistics from Criteria ##
-    nOscCriteria = 8
-    nbpCriteria  = 8
+    nOscCriteria = 10
+    nbpCriteria  = 10
 
     q = [[nOscCriteria, nbpCriteria] for i in range(nChroms)]
 
@@ -65,7 +66,7 @@ def calc_p(nChroms):
     p = [ [] for i in range(nChroms)]
 
     for i in range(nChroms):
-        # key: chr, nDSB, nOsc, nDel, nIns, nInv
+        # key: chr, nDSB, nOsc, nDel, nIns, nInv, nDup
 
         # number of junctions
         nDSB = sumStat_df.iat[i,1]
@@ -90,7 +91,7 @@ def calc_q(nChroms, dataType):
         model_df = pd.read_csv(r_chromo_stats_TSV, sep="\t")
 
         for i in range(nChroms):
-            # key: chr, nDSB, nOsc, nDel, nIns, nInv
+            # key: chr, nDSB, nOsc, nDel, nIns, nInv, nDup
 
             # number of double strand breaks
             nDSB = model_df.iat[i,1]
@@ -171,11 +172,13 @@ def plotAnalysis(analysisType, dataType, mem):
 
         sv_data = []
         for i in range(len(mem)):
-            sv_data.append( [ mem[i][1], mem[i][2], mem[i][3], mem[i][4] ] )
+            sv_data.append( (mem[i][0], mem[i][1], mem[i][2], mem[i][3], mem[i][4]) )
 
-        sv_df = pd.DataFrame(sv_data, columns=['nDSB','nDel','nInv','nIns'])
+        sv_df = pd.DataFrame(sv_data, columns=['nDSB','nDel','nInv','nIns', 'nDup'])
 
-        sns_plot = sns.violinplot(x="SV Type", y="Count", data=sv_df)
+        sns_plot = sns.violinplot(data=sv_df) #x="SV Type", y="Count",
+
+
         plt.savefig("../output/sumstats/sv_count.png")
 
 
@@ -196,12 +199,12 @@ def plotAnalysis(analysisType, dataType, mem):
 
 def main():
 
-    # outline purpose of program
-    analysisType = 'countSV'
+    ## outline purpose of program
+    #analysisType = 'countSV'
+    analysisType = 'check_chromothripsis'
     #analysisType = 'determine_params'
-    #analysisType = 'check_chromothripsis'
 
-    # state type of data being read
+    ## state type of data being read
     dataType = 'model'
     #dataType = 'real'
 
@@ -221,10 +224,10 @@ def main():
         if analysisType == 'countSV':
 
             # import summary statistics of whole simulation
-            nDSB, nDel, nInv, nIns = readSumStatsTotal(nChroms)
+            nDSB, nDel, nInv, nIns, nDup = readSumStatsTotal(nChroms)
 
             # save to memory
-            mem.append( (nDSB, nDel, nInv, nIns))
+            mem.append( (nDSB, nDel, nInv, nIns, nDup))
 
 
         elif analysisType == 'check_chromothripsis':
@@ -266,12 +269,12 @@ def main():
             d.clear()
 
 
-    print("number of accepted simulations: %s" %(len(mem)/N))
     if len(mem) > 0 and (analysisType == 'countSV' or analysisType == 'determine_params'):
+        print("number of accepted simulations: %s" %(len(mem)/N))
         plotAnalysis(analysisType, dataType, mem)
+
+
     mem.clear()
-
-
     print("End of simulation.")
     return
 
