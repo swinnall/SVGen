@@ -1,4 +1,4 @@
-" Evolutionary Model of Structural Variation (SVGen); Author: SamaxDSBel Winnall "
+" Evolutionary Model of Structural Variation ~ SVGen; Author: SamaxDSBel Winnall "
 
 ################################# comments ###################################
 
@@ -14,7 +14,7 @@ import sys
 
 ################################# classes ####################################
 
-
+## Connections class
 class ConnectionsClass():
     chrom = 0
     side  = 0
@@ -33,6 +33,8 @@ class ConnectionsClass():
 
 connection = ConnectionsClass(0,0,0,0,0,0)
 
+################################################################################
+## Writing SV data to file for Circos
 
 class cirosPlot():
     chr1     = 0
@@ -58,7 +60,7 @@ class cirosPlot():
         self.cycleNum
         self.SVtype
 
-    def insertions(self, nodes, cycleID, dest):
+    def insertions(self, nodes, cycleID):
         coveredNodes = []
         nIns = [ [0,0] for i in range(22)]
 
@@ -103,7 +105,7 @@ class cirosPlot():
 
         return nIns
 
-    def inversions(self, nodes, cycleID, dest, chromLengths):
+    def inversions(self, nodes, cycleID, chromLengths):
         coveredNodes = []
         nInv = [ [0,0] for i in range(22)]
 
@@ -197,7 +199,7 @@ class cirosPlot():
 
         return nInv
 
-    def duplications(self, nodes, cycleID, dest, nChroms, chromLengths, cn_df, num, size):
+    def duplications(self, nodes, cycleID, nChroms, chromLengths, cn_df, num, size):
         # code for populating cn_df based on nodes
         coveredNodes = []
         for i in range(len(nodes)):
@@ -299,6 +301,9 @@ class cirosPlot():
 calcSVs = cirosPlot(0,0,'+',0,0,'+',0,0,0,0)
 
 
+################################################################################
+## 'Check' Methods
+
 class CheckBool():
     def __init__(self):
         return
@@ -354,9 +359,40 @@ class CheckBool():
         nCent = tally
         return nCent, centList
 
+################################################################################
+## Function initialising cn segments for discretizing simulation data
+def cnProfiles(nChroms, chromLengths):
+
+    # create data frame
+    cn_df = [{} for i in range(nChroms)]
+
+    # initialise number of segments per chromosome
+    num = [0 for i in range(nChroms)]
+
+    # determine segment size
+    size = int(50E5)
+
+    # initialise data frame
+    for i in range(nChroms):
+
+        # number of segments per chromosomes
+        num[i] = int(chromLengths[1][i] / size)
+
+        # construct lists for appending
+        cn_df[i]['A'] = []
+        cn_df[i]['B'] = []
+
+        for j in range(num[i]):
+
+            # append segment info of "start, end, cn"
+            cn_df[i]['A'].append( [j*size, j*size + size, 1] )
+            cn_df[i]['B'].append( [j*size, j*size + size, 1] )
+
+    return cn_df, num, size
 
 
-################################ functions ###################################
+################################################################################
+## Functions for biology
 
 def generateDSBs(maxDSB):
 
@@ -369,13 +405,17 @@ def matPref(matType, nChroms):
     # chromMat is a probability matrix for selecting chromosomes
 
     if matType == 'random':
+        # equal probability of selecting each chromosome
         chromMat = [ 1/nChroms for i in range(nChroms)]
 
     elif matType == 'biased':
         chromMat = [0 for i in range(nChroms)]
+        # randomly select number of chromosomes to choose from
         nBiasedChroms = random.randint(1,3)
+        # choose the chromosomes
         selectedChromosomes = np.random.choice([i for i in range(nChroms)], nBiasedChroms, replace = False)
 
+        # assign probabilities; 2/3 bias towards the selected chromosomes
         p0 = 0.667
         p1 = p0/nBiasedChroms
         p2 = (1-p0)/(nChroms-nBiasedChroms)
@@ -389,7 +429,7 @@ def matPref(matType, nChroms):
     elif matType == 'fixed':
         chromMat = [0 for i in range(nChroms)]
         # same probability bias as before for reproducibility
-        # choose target chromosomes, -1 for index
+        # choose g target chromosomes, -1 for index
         g1 = 3; g2 = 5
         selectedChromosomes = [g1-1, g2-1]
         nBiasedChroms = len(selectedChromosomes)
@@ -407,7 +447,7 @@ def matPref(matType, nChroms):
     return chromMat
 
 
-def generateNodes(nodes,nDSB,nChroms,chromLengths,firstEvent,chromMat):
+def generateNodes(nodes,nDSB,nChroms,chromLengths,firstEvent,chromMat,DSBmat):
     print("\nEntering node generation\n")
 
     # reset prev path information
@@ -442,13 +482,13 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,firstEvent,chromMat):
     for i in range(0, 2*nDSB, 2):
 
         ## generate positional information
-        # biased chromosome target
+        # chooses chromosome based on chromMat probability distribution (prev func)
         chromosomeTarget = int( np.random.choice([i for i in range(nChroms)], 1, p = chromMat) ) + 1 # for index
-        #print(chromosomeTarget)
-        # normal chromosome target (random)
-        #chromosomeTarget = random.randint(1, nChroms)
         breakpointPos    = random.randint(0, chromLengths[1][chromosomeTarget-1])
         haplotype        = np.random.choice(hapChoice, 1)
+
+        # update number of DSBs per chrom per haplotype
+        DSBmat[chromosomeTarget][haplotype] += 1
 
         nodeData = {
             # identification:
@@ -545,15 +585,7 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,firstEvent,chromMat):
                         if adjID == np.pi:
                             nodeID = i+1
                         else:
-                            #print("node %s exists" %AdjID)
                             cnidChoice.append( (j, nodes[adjID].get("cn"), nodes[nodeID].get("side"), nodes[adjID].get("side")) )
-
-                            # debugging
-                            #print("\nCurrent node:")
-                            #print(nodes[nodeID].get("nodeID"), nodes[nodeID].get("position"), nodes[nodeID].get("type"), nodes[nodeID].get("side"), nodes[nodeID].get("chromID"), nodes[nodeID].get("cnID"), nodes[nodeID].get("cn"), nodes[nodeID].get("haplotype"))
-                            #print("Adjacent node:")
-                            #print(nodes[adjID].get("nodeID"), nodes[adjID].get("position"), nodes[adjID].get("type"), nodes[adjID].get("side"), nodes[adjID].get("chromID"), nodes[adjID].get("cnID"), nodes[adjID].get("cn"), nodes[adjID].get("haplotype"))
-
                             break # prevents repeat assignment
 
 
@@ -572,18 +604,7 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,firstEvent,chromMat):
                 nodes[i]["cn"]   = cnRef[1]
                 nodes[i+1]["cn"] = cnRef[1]
 
-                # cn = 0 means DSB occured on deleted segment
-                # correct nDSB
-                #if cnRef[1] == 0:
-                #    print("oof what to do here?")
-            #        nDSB -= 2
-            #        break
-
-                # debugging
-                #print("chosen cnID = %s" %cnRef[0])
-                #print("chosen cn   = %s" %cnRef[1])
-
-    return nodes#, nDSB
+    return nodes, DSBmat
 
 
 def generateTelomeres(nodes):
@@ -1148,7 +1169,7 @@ def checkInv(nodes, pathList):
     return nodes
 
 
-def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
+def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos, DSBmat):
 
     # list of introduced junctions
     newJuncList = []
@@ -1160,7 +1181,6 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
     n = 0
 
     # nCent - 1 = number of breakpoints
-    #print('\n\n %s \n\n' %nCent)
     for j in range(int(nCent)-1):
 
         # segment options for breakpoints
@@ -1172,11 +1192,6 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
             # appends first centromeric node
             if nodeID == centList[n] and len(options) == 0:
                 options.append(nodeID)
-
-                # debugging:
-                #print("\ncentList: %s\n " %centList)
-                #print("target 1st centromere %s" %centList[n])
-                #print("target 2nd centromere %s" %centList[n+1])
 
             # appends nodes between centromeres
             elif nodeID != centList[n+1] and len(options) != 0:
@@ -1202,9 +1217,6 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
         jChrom  = nodes[nodeChoice].get("chromID")
         segType = nodes[nodeChoice].get("type")
         centPos = int(centromerePos[jChrom-1])
-
-        #print("key: nodeID, junction position, chromosome, type, centromere position")
-        #print("%s %s %s %s %s" %(nodeChoice, jPos, jChrom, segType, centPos))
 
 
         # choosing breakpoint position given the segment type
@@ -1272,6 +1284,9 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
         newJuncList.append(uniqueID)
         newJuncList.append(uniqueID+1)
 
+        # update the number of double strand breaks per chrom per haplotype
+        DSBmat[jChrom][nodes[nodeChoice].get("haplotype")] += 1
+
         # connect new junctions to path
         if segType == 'pTel':
             # segment becomes non telomeric as pos < jPos
@@ -1320,10 +1335,11 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
                 nodes[uniqueID]["WT"]   = str(nodeChoice)
                 nodes[nodeChoice]["WT"] = str(uniqueID)
 
-            # leave centromere assignment for next cell cycle
+            # leave hasCent assignment for next cell cycle
 
     print("\nEntering subpath construction\npath: %s\n" %pathList.get(str(i)))
     ## end of introducing breakpoints
+
     # define subpaths:
     subPaths = []
     # populating list of list from the newly introduced junctions
@@ -1396,10 +1412,10 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos):
                     nodes[nodeID]["cellID"] = daughterCell
                     nodes[nodeID]["cn"] = 0
 
-    return nodes
+    return nodes, DSBmat
 
 
-def mitosis(nodes, pathList, cycleID, nCycles, centromerePos):
+def mitosis(nodes, pathList, cycleID, nCycles, centromerePos, DSBmat):
     print('\nEntering M\n')
 
     for i in range(len(pathList)):
@@ -1423,56 +1439,15 @@ def mitosis(nodes, pathList, cycleID, nCycles, centromerePos):
 
         # breakage
         elif nCent > 1:
-            nodes = cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos)
+            nodes, DSBmat = cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos, DSBmat)
 
-    return nodes
-
-
-def cnProfiles(nChroms, chromLengths):
-
-    # create data frame
-    cn_df = [{} for i in range(nChroms)]
-
-    # initialise number of segments per chromosome
-    num = [0 for i in range(nChroms)]
-
-    # determine segment size
-    size = int(50E5)
-
-    # initialise data frame
-    for i in range(nChroms):
-
-        # number of segments per chromosomes
-        num[i] = int(chromLengths[1][i] / size)
-
-        # construct lists for appending
-        cn_df[i]['A'] = []
-        cn_df[i]['B'] = []
-
-        for j in range(num[i]):
-
-            # append segment info of "start, end, cn"
-            cn_df[i]['A'].append( [j*size, j*size + size, 1] )
-            cn_df[i]['B'].append( [j*size, j*size + size, 1] )
-
-    return cn_df, num, size
+    return nodes, DSBmat
 
 
-def sumStats(nodes, nChroms, dest, nIns, nInv, cn_df, num, size, cycleID):
-    # summary statistic
-    nDel = [ 0 for i in range(nChroms)]
-
-    ## code for nJ, the number of junctions
-    # create data frame
-    nbp = [ [0,0] for i in range(nChroms)]
-
-    # count number of junctions per chrom per haplotype
-    for i in range(len(nodes)):
-
-        chrom = nodes[i].get("chromID")
-        happ  = nodes[i].get("haplotype")
-        nbp[chrom-1][happ] += 1
-
+################################################################################
+## Analysis Code:
+# Generates summary statistcs for final analysis
+def sumStats(nodes, nChroms, nIns, nInv, cn_df, num, size, cycleID, DSBmat):
 
     ## code for merging segments for oscillating cn statistic
     # create merged haplotype data frame
@@ -1481,7 +1456,10 @@ def sumStats(nodes, nChroms, dest, nIns, nInv, cn_df, num, size, cycleID):
     # create merged cn data frame
     cn_df_merged = {}
 
-    # merge haplotypes
+    # initialisng deletions summary statistic
+    nDel = [ 0 for i in range(nChroms)]
+
+    # merge haplotypes, maintain segment size
     for i in range(nChroms):
 
         # initialise list
@@ -1490,13 +1468,14 @@ def sumStats(nodes, nChroms, dest, nIns, nInv, cn_df, num, size, cycleID):
         # populate list with total cn
         for j in range(num[i]):
 
+            # taking data from cirosPlot class, duplications method
             s = cn_df[i].get('A')[j][0]
             e = cn_df[i].get('A')[j][1]
             c = cn_df[i].get('A')[j][2] + cn_df[i].get('B')[j][2]
 
             cn_temp[str(i+1)].append( [s, e, c] )
 
-
+    # merge segments based on cn
     for i in range(nChroms):
 
         # construct list for appending
@@ -1537,7 +1516,7 @@ def sumStats(nodes, nChroms, dest, nIns, nInv, cn_df, num, size, cycleID):
                 cn_df_merged[idx].append( [seg_start, seg_end, seg_cn] )
 
 
-    #### writing sv data deletions and duplications for shatterseek || as well as circos deletions
+    # writing SV deletions & duplications for shatterseek and circos
     for i in range(nChroms):
         idx = str(i+1)
         for j in range(len(cn_df_merged[idx])):
@@ -1549,6 +1528,8 @@ def sumStats(nodes, nChroms, dest, nIns, nInv, cn_df, num, size, cycleID):
                 s1 = cn_df_merged.get(idx)[j][0]
                 e1 = cn_df_merged.get(idx)[j][1]
 
+                # write SV deletions - for Circos (by haplotype)
+                # CN deletions/duplications written for Circos in circosPlot method
                 with open('../output/circos/sv_data.tsv', 'a', newline='') as file:
                     writer = csv.writer(file, delimiter = '\t')
                     # key: [chr, start, '+', chr, end, '-', 'svtype=DEL', cycleNum]
@@ -1557,7 +1538,7 @@ def sumStats(nodes, nChroms, dest, nIns, nInv, cn_df, num, size, cycleID):
                 nDel[i] += 1
 
 
-            # write duplications - for shatterseek
+            # write SV duplications - for shatterseek
             if cn_df_merged.get(idx)[j][2] > 2 and cycleID == 1:
 
                 s1 = cn_df_merged.get(idx)[j][0]
@@ -1568,7 +1549,7 @@ def sumStats(nodes, nChroms, dest, nIns, nInv, cn_df, num, size, cycleID):
                     # key: [chr1, start, '-', chr1, end, '+', "DUP"]
                     writer.writerow([i+1, s1, '-', i+1, e1, '+', "DUP"])
 
-            # write deletions - for shatterseek
+            # write SV deletions - for shatterseek
             if cn_df_merged.get(idx)[j][2] < 2 and cycleID == 1:
 
                 s1 = cn_df_merged.get(idx)[j][0]
@@ -1586,7 +1567,7 @@ def sumStats(nodes, nChroms, dest, nIns, nInv, cn_df, num, size, cycleID):
         nOsc[i] = len(cn_df_merged.get(str(i+1)))
 
 
-    # write to tsv - for ShatterSeek
+    # write CN data to tsv - for ShatterSeek
     for i in range(nChroms):
         idx = str(i+1)
         for j in range(len(cn_df_merged.get(idx))):
@@ -1601,15 +1582,16 @@ def sumStats(nodes, nChroms, dest, nIns, nInv, cn_df, num, size, cycleID):
                 writer.writerow([chr1, start, end, cn_tot])
 
 
-    # write summary statistics for sw_out inference
+    # write summary statistics for sumstats inference
     for i in range(nChroms):
-        with open('../output/sw_out/sumStats.tsv', 'a', newline='') as file:
+        with open('../output/sumstats/sumStats.tsv', 'a', newline='') as file:
             writer = csv.writer(file, delimiter = '\t')
-            writer.writerow([i+1, j, nbp[i][0]+nbp[i][1], nOsc[i], nDel[i], nIns[i][0]+nIns[i][1], nInv[i][0]+nInv[i][1], cycleID])
+            writer.writerow([i+1, j, DSBmat[i][0]+DSBmat[i][1], nOsc[i], nDel[i], nIns[i][0]+nIns[i][1], nInv[i][0]+nInv[i][1], cycleID])
+
     return
 
 
-def analysis(nodes, cycleID, dest, maxDSB, lmbda, nCycles, chromLengths, nDSB, cn_df, num, size, nChroms):
+def analysis(nodes, nCycles, cycleID, lmbda, nCycles, chromLengths, DSBmat, cn_df, num, size, nChroms):
 
     if cycleID == 0:
         with open('../output/circos/sv_data.tsv', 'w', newline='') as file:
@@ -1620,22 +1602,19 @@ def analysis(nodes, cycleID, dest, maxDSB, lmbda, nCycles, chromLengths, nDSB, c
             writer = csv.writer(file, delimiter = '\t')
             writer.writerow(["chr", "start", "end", "extra", "cycleNum"])
 
-        # total number of junctions present in cell
-        nJ = 0
-        for i in range(len(nodes)):
-            if nodes[i].get("cellID") == 1:
-                nJ += 1
 
-        with open('../output/sw_out/parameters.tsv', 'w', newline='') as file:
+    if cycleID == nCycles:
+
+        # summary statistics
+        with open('../output/sumstats/parameters.tsv', 'w', newline='') as file:
             writer = csv.writer(file, delimiter = '\t')
             writer.writerow(["nJ"])
             writer.writerow([nJ])
 
-        with open('../output/sw_out/sumStats.tsv', 'w', newline='') as file:
+        with open('../output/sumstats/sumStats.tsv', 'w', newline='') as file:
             writer = csv.writer(file, delimiter = '\t')
             writer.writerow(["chr", "haplo", "nJ", "nOsc", "nDel", "nIns", "nInv", "cycleNum"])
 
-    if cycleID == 1:
 
         # for use of shatterseek chromothripsis determination
         with open('../output/ShatterSeek/R/SVData.tsv', 'w', newline='') as file:
@@ -1647,21 +1626,22 @@ def analysis(nodes, cycleID, dest, maxDSB, lmbda, nCycles, chromLengths, nDSB, c
             writer.writerow(["chromosome", "start", "end", "total_cn"])
 
     # analyse data for SVs
-    nIns  = calcSVs.insertions(nodes,cycleID,dest)
-    nInv  = calcSVs.inversions(nodes,cycleID,dest,chromLengths)
-    cn_df, num = calcSVs.duplications(nodes,cycleID,dest,nChroms,chromLengths,cn_df,num,size)
+    nIns  = calcSVs.insertions(nodes,cycleID)
+    nInv  = calcSVs.inversions(nodes,cycleID,chromLengths)
+    cn_df, num = calcSVs.duplications(nodes,cycleID,nChroms,chromLengths,cn_df,num,size)
 
-    sumStats(nodes, nChroms, dest, nIns, nInv, cn_df, num, size, cycleID)
+
+    if cycleID == nCycles:
+        sumStats(nodes, nChroms, nIns, nInv, cn_df, num, size, cycleID, DSBmat)
 
     return
 
-
+################################################################################
 # generate SV:
 def main():
 
     # variables
     nChroms  = 22
-    dest     = 0
     nodes    = []
     pathList = {}
 
@@ -1673,16 +1653,19 @@ def main():
     for length in range(len(chromLengths)):
         centromerePos.append( chromLengths[1][length] / 2 )
 
+    # initialise the number of DSBs on each chromosome
+    DSBmat = [ [0,0] for i in range(nChroms)]
+
     # define matrix preferencing chromosomes
-    #matType = 'random'
-    matType = 'biased'
+    matType = 'random'
+    #matType = 'biased'
     #matType = 'fixed'
     chromMat = matPref(matType, nChroms)
 
     # parameters
     maxDSB  = 40   # 0 < nDSBs < maxDSB
     lmbda   = 5    # max number of unrepaired segments a cell can handle
-    nCycles = 2    # number of cell cycles
+    nCycles = 2    # number of cell cycles - make stochastic at some point
 
     # cell cycles
     cycleID = 0
@@ -1690,7 +1673,6 @@ def main():
 
     for i in range(nCycles):
         print("\n############################ ")
-        nodes.sort(key = lambda x:x['nodeID'] )
 
         # generate breakpoints
         nDSB = generateDSBs(maxDSB)
@@ -1707,7 +1689,7 @@ def main():
 
 
             # initialises nodes dictionary
-            nodes = generateNodes(nodes, nDSB, nChroms, chromLengths, firstEvent, chromMat)
+            nodes, DSBmat = generateNodes(nodes, nDSB, nChroms, chromLengths, firstEvent, chromMat, DSBmat)
             print("Total number of junctions in nucleus: %d\n" %len(nodes))
 
 
@@ -1737,7 +1719,7 @@ def main():
 
 
             # mitosis phase
-            nodes = mitosis(nodes, pathList, cycleID, nCycles, centromerePos)
+            nodes, DSBmat = mitosis(nodes, pathList, cycleID, nCycles, centromerePos, DSBmat)
 
 
             # initialise cn information
@@ -1745,13 +1727,15 @@ def main():
 
 
             # open output file for writing SV data
-            analysis(nodes, cycleID, dest, maxDSB, lmbda, nCycles, chromLengths, nDSB, cn_df, num, size, nChroms)
+            analysis(nodes, nCycles, cycleID, maxDSB, lmbda, nCycles, chromLengths, DSBmat, cn_df, num, size, nChroms)
 
 
             # clear cn data frame
             cn_df.clear()
 
-        else: print("Exception, no available junctions.")
+        else:
+            print("Exception, no available junctions.")
+
 
         cycleID += 1
         pathList.clear()

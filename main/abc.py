@@ -26,14 +26,17 @@ def copy(src, dest):
     return
 
 
-def readParams(nChroms):
+def readSumStatsTotal(nChroms):
 
     # read SVGen parameter info
-    r_par_TSV = '../output/sw_out' + '/parameters.tsv'
-    par_df  = pd.read_csv(r_par_TSV, sep="\t")
-    nJ      = par_df.iat[0,0]
+    r_par_TSV = '../output/sumstats/sumStats_total.tsv'
+    par_df    = pd.read_csv(r_par_TSV, sep="\t")
+    nDSB      = par_df.iat[0,0]
+    nDel      = par_df.iat[0,1]
+    nInv      = par_df.iat[0,2]
+    nIns      = par_df.iat[0,3]
 
-    return nJ
+    return nDSB, nDel, nInv, nIns
 
 
 def checkChromothripsis(nChroms, analysisType):
@@ -44,8 +47,10 @@ def checkChromothripsis(nChroms, analysisType):
 
     q = [[nOscCriteria, nbpCriteria] for i in range(nChroms)]
 
+    # parameters from simulation
     p = calc_p(nChroms)
 
+    # distance between the two
     d = calc_d(nChroms, p, q, analysisType)
 
     return d
@@ -59,7 +64,7 @@ def calc_q(nChroms, dataType):
 
         q = [ [] for i in range(nChroms)]
 
-        r_chromo_stats_TSV = '../input' + '/model_chromo.tsv'
+        r_chromo_stats_TSV = '../input/model_chromo.tsv'
         model_df = pd.read_csv(r_chromo_stats_TSV, sep="\t")
 
         ele = 0
@@ -67,9 +72,9 @@ def calc_q(nChroms, dataType):
             # key: chr, haplo, nbp, nOsc, nDel, nIns, nInv
 
             # number of junctions
-            nJ1 = model_df.iat[i,2]
-            nJ2 = model_df.iat[i+1,2]
-            q[ele].append( nJ1+nJ2 )
+            nDSB1 = model_df.iat[i,2]
+            nDSB2 = model_df.iat[i+1,2]
+            q[ele].append( nDSB1+nDSB2 )
 
             # number of oscillating cn segments
             nOsc1 = model_df.iat[i,3]
@@ -83,15 +88,15 @@ def calc_q(nChroms, dataType):
 
         q = [ [] for i in range(nChroms)]
 
-        r_chromo_stats_TSV = '../input' + '/real_chromo.tsv'
+        r_chromo_stats_TSV = '../input/real_chromo.tsv'
         real_df = pd.read_csv(r_chromo_stats_TSV, sep="\t")
 
         for i in range(nChroms):
             # key: id, Chr, Start, End, Intrchr. SVs, Total SVs, SVs in sample, Nb. DEL, Nb. DUP, Nb. CN segments, Nb. oscillating CN, chromo_label, ploidy, histo, type_chromothripsis, Nb. breakpoints in chromosome, Fraction SVs in chromothripsis
 
-            # number of junctions
-            nJ = 2*real_df.iat[i,15] # double as number of junctions not bp
-            q[i].append(nJ)
+            # number of double strand breaks
+            nDSB = real_df.iat[i,15]
+            q[i].append(nDSB)
 
             # number of oscillating cn segments
             nOsc = real_df.iat[i,10]
@@ -103,19 +108,17 @@ def calc_q(nChroms, dataType):
 def calc_p(nChroms):
 
     ## Read Summary Statistics from Simulation ##
-    r_sumStats_TSV = '../output/sw_out/sumStats.tsv'
+    r_sumStats_TSV = '../output/sumstats/sumStats_chrom.tsv'
     sumStat_df = pd.read_csv(r_sumStats_TSV, sep="\t")
 
     p = [ [] for i in range(nChroms)]
 
-    # average number of junctions as real data isn't haplotype specific
-    ele = 0
     for i in range(nChroms):
         # key: chr, haplo, nbp, nOsc, nDel, nIns, nInv
 
         # number of junctions
-        nJ = sumStat_df.iat[i,2]
-        p[i].append( nJ )
+        nDSB = sumStat_df.iat[i,2]
+        p[i].append( nDSB )
 
         # number of oscillating cn segments
         nOsc = sumStat_df.iat[i,3]
@@ -141,7 +144,7 @@ def calc_d(nChroms, p, q, analysisType):
                 # if p is greater than threshold, zero distance therefore undo addition
                 if analysisType == 'check_chromothripsis' and p[i][j] > q[i][j]:
                     x -= (q[i][j] - p[i][j])**2
-                # parameter inference requires normal euclidian distance so no else
+                # parameter inference requires normal euclidian distance so no else statement
 
             else:
                 x += 10
@@ -152,8 +155,8 @@ def calc_d(nChroms, p, q, analysisType):
 
 
 def acceptReject(d, nChroms):
-    # scans d; if any chromosome is within acceptable range then simulation
-    # parameters and d are saved in memory
+    # scans d; if any chromosome is within acceptable range then outcome == true
+    # d and parameters are then saved in memory
 
     outcome    = False
     chromCount = 0
@@ -167,17 +170,31 @@ def acceptReject(d, nChroms):
     return outcome
 
 
-def analysis(mem):
+def plotAnalysis(analysisType, dataType, mem):
 
-    dsbData = []
-    for i in range(len(mem)):
-        dsbData.append( mem[i][1] )
+    if analysisType == 'countSV':
 
-    dsb_df = pd.DataFrame(dsbData, columns=['nJ'])
-    print('total number of dsbs per successful simulation: \n%s' %dsb_df)
+        sv_data = []
+        for i in range(len(mem)):
+            sv_data.append( [ mem[i][1], mem[i][2], mem[i][3], mem[i][4] ] )
 
-    sns_plot = sns.violinplot(y="nJ", data=dsb_df)
-    plt.savefig("../output/sw_out/circos/param_plots/violinplot.png")
+        sv_df = pd.DataFrame(sv_data, columns=['nDSB','nDel','nInv','nIns'])
+
+        sns_plot = sns.violinplot(x="SV Type", y="Count", data=sv_df)
+        plt.savefig("../output/sumstats/sv_count.png")
+
+
+    elif analysisType == 'determine_params':
+
+        dsbData = []
+        for i in range(len(mem)):
+            dsbData.append( mem[i][1] )
+
+        dsb_df = pd.DataFrame(dsbData, columns=['nDSB'])
+        print('total number of dsbs per successful simulation: \n%s' %dsb_df)
+
+        sns_plot = sns.violinplot(y="nDSB", data=dsb_df)
+        plt.savefig("../output/sumstats/mutationRate_" + str(dataType) + "/.png")
 
     return
 
@@ -185,8 +202,9 @@ def analysis(mem):
 def main():
 
     # outline purpose of program
+    analysisType = 'countSV'
     #analysisType = 'determine_params'
-    analysisType = 'check_chromothripsis'
+    #analysisType = 'check_chromothripsis'
 
     # state type of data being read
     dataType = 'model'
@@ -195,16 +213,8 @@ def main():
     # define number of chromosomes
     nChroms = 22
 
-    # define memory matrix
+    # define memory matrix for storing simulation statistics
     mem = []
-
-    # ensure output file exists
-    src  = '../input/00'
-    dest = '../output/00'
-    copy(src,dest)
-
-    # import simulation parameters - total number of junctions
-    nJ = readParams(nChroms)
 
     # run simulation N times
     N = 10000
@@ -213,7 +223,16 @@ def main():
         # generate SVs
         sv_gen.main()
 
-        if analysisType == 'check_chromothripsis':
+        if analysisType == 'countSV':
+
+            # import summary statistics of whole simulation
+            nDSB, nDel, nInv, nIns = readSumStatsTotal(nChroms)
+
+            # save to memory
+            mem.append( (nDSB, nDel, nInv, nIns))
+
+
+        elif analysisType == 'check_chromothripsis':
 
             # generate distance to SS
             d = checkChromothripsis(nChroms, analysisType)
@@ -223,17 +242,17 @@ def main():
 
             # append simulation info to memory
             if outcome == True:
-                mem.append( (d, nJ) )
+                mem.append( (d, nDSB) )
                 print("Chromothripsis generated, d = %s." %min(d))
                 sys.exit()
 
 
         elif analysisType == 'determine_params':
 
-            # model/real data summary statistics
+            # model/real data summary statistics by chromosome
             q = calc_q(nChroms, dataType)
 
-            # current simulation summary statistics
+            # current simulation summary statistics by chromosome
             p = calc_p(nChroms)
 
             # distance between statistics
@@ -251,10 +270,12 @@ def main():
             q.clear()
             d.clear()
 
-    print("number of accepted simulations: %s" %(len(mem)/N))
 
-    if len(mem) > 0 and analysisType == 'determine_params':
-        analysis(mem)
+    print("number of accepted simulations: %s" %(len(mem)/N))
+    if len(mem) > 0 and (analysisType == 'countSV' or analysisType == 'determine_params'):
+        plotAnalysis(analysisType, dataType, mem)
+    mem.clear()
+
 
     print("End of simulation.")
     return
