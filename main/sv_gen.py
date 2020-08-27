@@ -431,11 +431,11 @@ def matPref(matType, nChroms):
         chromMat = [0 for i in range(nChroms)]
         # same probability bias as before for reproducibility
         # choose g target chromosomes, -1 for index
-        g1 = 3; g2 = 5
-        selectedChromosomes = [g1-1, g2-1]
+        g1 = 10; g2 = 4; g3 = 13
+        selectedChromosomes = [g1-1, g2-1, g3-1]
         nBiasedChroms = len(selectedChromosomes)
 
-        p0 = 0.75
+        p0 = 0.667
         p1 = p0/nBiasedChroms
         p2 = (1-p0)/(nChroms-nBiasedChroms)
 
@@ -1655,8 +1655,8 @@ def analysis(nodes, nCycles, cycleID, lmbda, chromLengths, DSBmat, cn_df, num, s
     cn_df, num = calcSVs.duplications(nodes,cycleID,nChroms,chromLengths,cn_df,num,size)
 
 
-    #if cycleID == nCycles-1:
-    sumStats(nodes, nChroms, nIns, nInv, cn_df, num, size, cycleID, DSBmat, nBiasedChroms)
+    if cycleID == nCycles-1:
+        sumStats(nodes, nChroms, nIns, nInv, cn_df, num, size, cycleID, DSBmat, nBiasedChroms)
 
     return
 
@@ -1682,8 +1682,8 @@ def main():
 
     # define matrix preferencing chromosomes
     #matType = 'random'
-    matType = 'biased'
-    #matType = 'fixed'
+    #matType = 'biased'
+    matType = 'fixed'
     chromMat, nBiasedChroms = matPref(matType, nChroms)
 
     # parameters
@@ -1699,11 +1699,11 @@ def main():
 
         # for selecting specific DSB ranges/values by cell cycle number
         if cycleID == 0:
-            minDSB  = 20
-            maxDSB  = 20
+            minDSB  = 0
+            maxDSB  = 40
         else:
-            minDSB  = 20
-            maxDSB  = 20
+            minDSB  = 0
+            maxDSB  = 40
 
         # generate breakpoints
         nDSB = generateDSBs(minDSB, maxDSB)

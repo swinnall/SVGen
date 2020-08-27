@@ -71,7 +71,7 @@ def calc_p(nChroms):
     for i in range(nChroms):
         # key: chr, nDSB, nOsc, nDel, nIns, nInv, nDup
 
-        # number of junctions
+        # number of DSBs
         nDSB = sumStat_df.iat[i,1]
         p[i].append( nDSB )
 
@@ -90,7 +90,7 @@ def calc_q(nChroms, dataType):
 
         q = [ [] for i in range(nChroms)]
 
-        r_chromo_stats_TSV = '../input/model_chromo.tsv'
+        r_chromo_stats_TSV = '../input/model/sumStats_chrom.tsv'
         model_df = pd.read_csv(r_chromo_stats_TSV, sep="\t")
 
         for i in range(nChroms):
@@ -161,7 +161,7 @@ def acceptReject(d, nChroms):
     chromCount = 0
     for i in range(nChroms):
 
-        if d[i][0] <= 4:
+        if d[i][0] <= 1:
             chromCount += 1
             outcome = True
 
@@ -195,7 +195,7 @@ def plotAnalysis(analysisType, dataType, mem):
         print('total number of dsbs per successful simulation: \n%s' %dsb_df)
 
         sns_plot = sns.violinplot(y="nDSB", data=dsb_df)
-        plt.savefig("../output/sumstats/mutationRate_" + str(dataType) + "/.png")
+        plt.savefig("../output/sumstats/mutationRate_" + str(dataType) + ".png")
 
     return
 
@@ -204,8 +204,8 @@ def main():
 
     ## outline purpose of program
     #analysisType = 'countSV'
-    analysisType = 'check_chromothripsis'
-    #analysisType = 'determine_params'
+    #analysisType = 'check_chromothripsis'
+    analysisType = 'determine_params'
 
     ## state type of data being read
     dataType = 'model'
@@ -249,7 +249,7 @@ def main():
                 mem.append( (d, nDSB, nBiasedChroms) )
                 print("Chromothripsis generated, d = %s." %min(d))
                 ## uncomment if want to stop immediately at chromothripsis
-                #sys.exit()
+                sys.exit()
 
 
         elif analysisType == 'determine_params':
@@ -270,24 +270,27 @@ def main():
 
             # append simulation info to memory
             if outcome == True:
-                mem.append( (d, p[2]) )
+                total_DSB = 0
+                for i in range(nChroms):
+                    total_DSB += p[i][0]
+                mem.append( (d, total_DSB) )
 
             # clear variables
-            p.clear()
-            q.clear()
-            d.clear()
+            #p.clear()
+            #q.clear()
+            #d.clear()
 
 
     if len(mem) > 0 and (analysisType == 'countSV' or analysisType == 'determine_params'):
         plotAnalysis(analysisType, dataType, mem)
         print("number of accepted simulations: %s" %(len(mem)/N))
 
-    if analysisType == 'check_chromothripsis':
-        print("number of accepted simulations: %s" %(len(mem)/N))
-        print("mem: %s" %mem)
-        with open('../output/sumstats/prob_trends/nCycles/2cycle.tsv', 'w', newline='') as file:
-            writer = csv.writer(file, delimiter = '\t')
-            writer.writerow([len(mem)/N])
+    #if analysisType == 'check_chromothripsis':
+    #    print("number of accepted simulations: %s" %(len(mem)/N))
+    #    print("mem: %s" %mem)
+    #    with open('../output/sumstats/prob_trends/nCycles/2cycle.tsv', 'w', newline='') as file:
+    #        writer = csv.writer(file, delimiter = '\t')
+    #        writer.writerow([len(mem)/N])
 
 
     mem.clear()
