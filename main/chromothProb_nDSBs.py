@@ -16,21 +16,24 @@ import sys
 
 
 # load data
-r_prob_neut_TSV = '../output/sumstats/prob_trends/selection/prob_neutral.tsv'
-probN = pd.read_csv(r_prob_neut_TSV, sep="\t")
+r_0_TSV = '../output/sumstats/prob_trends/nDSBs/nDSB_0.tsv'
+L0 = pd.read_csv(r_0_TSV, sep="\t")
 
-r_prob_bias_TSV = '../output/sumstats/prob_trends/selection/prob_biased.tsv'
-probB = pd.read_csv(r_prob_bias_TSV, sep="\t")
+r_5_TSV = '../output/sumstats/prob_trends/nDSBs/nDSB_5.tsv'
+L5 = pd.read_csv(r_5_TSV, sep="\t")
 
-r_prob_forced_TSV = '../output/sumstats/prob_trends/selection/prob_forced.tsv'
-probF = pd.read_csv(r_prob_forced_TSV, sep="\t")
+r_10_TSV = '../output/sumstats/prob_trends/nDSBs/nDSB_10.tsv'
+L10 = pd.read_csv(r_10_TSV, sep="\t")
 
-r_prob_Sforced_TSV = '../output/sumstats/prob_trends/selection/prob_sforced.tsv'
-probSf = pd.read_csv(r_prob_Sforced_TSV, sep="\t")
+r_50_TSV = '../output/sumstats/prob_trends/nDSBs/nDSB_50.tsv'
+L50 = pd.read_csv(r_50_TSV, sep="\t")
+
+r_100_TSV = '../output/sumstats/prob_trends/nDSBs/nDSB_100.tsv'
+L100 = pd.read_csv(r_100_TSV, sep="\t")
 
 # create dataframe
-prob_df = pd.DataFrame(list(zip(probN, probB, probF, probSf)), columns=['Neutral', 'Biased', 'Forced', 'Strong Forced'])
+prob_df = pd.DataFrame(list(zip(L0, L5, L10, L50, L100)), columns=['0', '5', '10', '50', '100'])
 
 # plot figure
 sns_plot = sns.barplot(data=prob_df)
-plt.savefig("../output/sumstats/prob_trends/selection/chromothProb.png")
+plt.savefig("../output/sumstats/prob_trends/nDSBs/chromothProb_nDSB.png")

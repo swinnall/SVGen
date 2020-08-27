@@ -1699,11 +1699,11 @@ def main():
 
         # for selecting specific DSB ranges/values by cell cycle number
         if cycleID == 0:
-            minDSB  = 100
-            maxDSB  = 100
+            minDSB  = 20
+            maxDSB  = 20
         else:
-            minDSB  = 100
-            maxDSB  = 100
+            minDSB  = 20
+            maxDSB  = 20
 
         # generate breakpoints
         nDSB = generateDSBs(minDSB, maxDSB)

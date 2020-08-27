@@ -285,7 +285,7 @@ def main():
     if analysisType == 'check_chromothripsis':
         print("number of accepted simulations: %s" %(len(mem)/N))
         print("mem: %s" %mem)
-        with open('../output/sumstats/prob_trends/nDSBS/nDSB_100.tsv', 'w', newline='') as file:
+        with open('../output/sumstats/prob_trends/nCycles/2cycle.tsv', 'w', newline='') as file:
             writer = csv.writer(file, delimiter = '\t')
             writer.writerow([len(mem)/N])
 
