@@ -87,7 +87,7 @@ class cirosPlot():
                         strand2  = '+'
                         extra    = 'svtype=INS'
                         cycleNum = cycleID
-                        SVtype   = 'INS'
+                        SVtype   = 'TRA' # 'INS'
 
                         happ = nodes[nodeID].get("haplotype")
                         nIns[chr1-1][happ] += 1
@@ -129,7 +129,7 @@ class cirosPlot():
                         strand2  = '+'
                         extra    = 'svtype=INV'
                         cycleNum = cycleID
-                        SVtype   = 'INV'
+                        SVtype   = 'h2hINV'
 
                         happ = nodes[nodeID].get("haplotype")
                         nInv[chr1-1][happ] += 1
@@ -155,7 +155,7 @@ class cirosPlot():
                     strand2  = '+'
                     extra    = 'svtype=INV'
                     cycleNum  = cycleID
-                    SVtype   = 'INV'
+                    SVtype   = 'h2hINV'
 
                     happ = nodes[nodeID].get("haplotype")
                     nInv[chr1-1][happ] += 1
@@ -181,7 +181,7 @@ class cirosPlot():
                     strand2  = '+'
                     extra    = 'svtype=INV'
                     cycleNum  = cycleID
-                    SVtype   = 'INV'
+                    SVtype   = 'h2hINV'
 
                     happ = nodes[nodeID].get("haplotype")
                     nInv[chr1-1][happ] += 1
@@ -407,15 +407,16 @@ def matPref(matType, nChroms):
     if matType == 'random':
         # equal probability of selecting each chromosome
         chromMat = [ 1/nChroms for i in range(nChroms)]
+        nBiasedChroms = 0
 
     elif matType == 'biased':
         chromMat = [0 for i in range(nChroms)]
         # randomly select number of chromosomes to choose from
-        nBiasedChroms = random.randint(1,1)
+        nBiasedChroms = random.randint(1,3)
         # choose the chromosomes
         selectedChromosomes = np.random.choice([i for i in range(nChroms)], nBiasedChroms, replace = False)
 
-        # assign probabilities; 2/3 bias towards the selected chromosomes
+        # assign probabilities; bias towards the selected chromosomes
         p0 = 0.667
         p1 = p0/nBiasedChroms
         p2 = (1-p0)/(nChroms-nBiasedChroms)
@@ -434,7 +435,7 @@ def matPref(matType, nChroms):
         selectedChromosomes = [g1-1, g2-1]
         nBiasedChroms = len(selectedChromosomes)
 
-        p0 = 0.667
+        p0 = 0.75
         p1 = p0/nBiasedChroms
         p2 = (1-p0)/(nChroms-nBiasedChroms)
 
@@ -444,7 +445,7 @@ def matPref(matType, nChroms):
             else:
                 chromMat[i] = p2
 
-    return chromMat
+    return chromMat, nBiasedChroms
 
 
 def generateNodes(nodes,nDSB,nChroms,chromLengths,firstEvent,chromMat,DSBmat):
@@ -1447,7 +1448,7 @@ def mitosis(nodes, pathList, cycleID, nCycles, centromerePos, DSBmat):
 ################################################################################
 ## Analysis Code:
 # Generates summary statistcs for final analysis
-def sumStats(nodes, nChroms, nIns, nInv, cn_df, num, size, cycleID, DSBmat):
+def sumStats(nodes, nChroms, nIns, nInv, cn_df, num, size, cycleID, DSBmat, nBiasedChroms):
 
     ## code for merging segments for oscillating cn statistic
     # create merged haplotype data frame
@@ -1571,7 +1572,9 @@ def sumStats(nodes, nChroms, nIns, nInv, cn_df, num, size, cycleID, DSBmat):
     # calculate nOsc
     nOsc = [ 0 for i in range(nChroms)]
     for i in range(nChroms):
-        nOsc[i] = len(cn_df_merged.get(str(i+1)))
+        # oscillations are counted as the change, not the segments themselves
+        # thus nOsc = nSegments - 1
+        nOsc[i] = len(cn_df_merged.get(str(i+1)))-1
 
 
     # write CN data to tsv - for ShatterSeek
@@ -1605,12 +1608,12 @@ def sumStats(nodes, nChroms, nIns, nInv, cn_df, num, size, cycleID, DSBmat):
 
     with open('../output/sumstats/sumStats_total.tsv', 'a', newline='') as file:
         writer = csv.writer(file, delimiter = '\t')
-        writer.writerow([DSB_tot, nDel_tot, nIns_tot, nInv_tot, nDup_tot, cycleID])
+        writer.writerow([DSB_tot, nDel_tot, nIns_tot, nInv_tot, nDup_tot, cycleID, nBiasedChroms])
 
     return
 
 
-def analysis(nodes, nCycles, cycleID, lmbda, chromLengths, DSBmat, cn_df, num, size, nChroms):
+def analysis(nodes, nCycles, cycleID, lmbda, chromLengths, DSBmat, cn_df, num, size, nChroms, nBiasedChroms):
 
     # create files for writing to
     if cycleID == 0:
@@ -1629,7 +1632,7 @@ def analysis(nodes, nCycles, cycleID, lmbda, chromLengths, DSBmat, cn_df, num, s
         # summary statistics for the whole system
         with open('../output/sumstats/sumStats_total.tsv', 'w', newline='') as file:
             writer = csv.writer(file, delimiter = '\t')
-            writer.writerow(["nDSB", "nDel", "nInv", "nIns", "nDup", 'cycleID'])
+            writer.writerow(["nDSB", "nDel", "nInv", "nIns", "nDup", 'cycleID', 'nBiasedChroms'])
 
         # summary statistics for each chromosome
         with open('../output/sumstats/sumStats_chrom.tsv', 'w', newline='') as file:
@@ -1653,7 +1656,7 @@ def analysis(nodes, nCycles, cycleID, lmbda, chromLengths, DSBmat, cn_df, num, s
 
 
     #if cycleID == nCycles-1:
-    sumStats(nodes, nChroms, nIns, nInv, cn_df, num, size, cycleID, DSBmat)
+    sumStats(nodes, nChroms, nIns, nInv, cn_df, num, size, cycleID, DSBmat, nBiasedChroms)
 
     return
 
@@ -1678,10 +1681,10 @@ def main():
     DSBmat = [ [0,0] for i in range(nChroms)]
 
     # define matrix preferencing chromosomes
-    matType = 'random'
-    #matType = 'biased'
+    #matType = 'random'
+    matType = 'biased'
     #matType = 'fixed'
-    chromMat = matPref(matType, nChroms)
+    chromMat, nBiasedChroms = matPref(matType, nChroms)
 
     # parameters
     lmbda   = 5    # max number of unrepaired segments a cell can handle
@@ -1696,23 +1699,25 @@ def main():
 
         # for selecting specific DSB ranges/values by cell cycle number
         if cycleID == 0:
-            minDSB  = 15
-            maxDSB  = 15
+            minDSB  = 100
+            maxDSB  = 100
         else:
-            minDSB  = 15
-            maxDSB  = 15
+            minDSB  = 100
+            maxDSB  = 100
 
         # generate breakpoints
         nDSB = generateDSBs(minDSB, maxDSB)
         print("Cycle: %d; Number of DSBs: %d" %(cycleID, nDSB))
 
 
-        #if nDSB > 0:
-        count += 1
+        if nDSB > 0:
+            # counts number of events
+            count += 1
 
-        # needed for junction cn initialisation
-        if count == 1:
-            firstEvent = True
+            # junction cn initialisation; event = insertion of DSBs
+            if count == 1:
+                firstEvent = True
+            else: firstEvent = False
         else: firstEvent = False
 
 
@@ -1755,7 +1760,7 @@ def main():
 
 
         # open output file for writing SV data
-        analysis(nodes, nCycles, cycleID, lmbda, chromLengths, DSBmat, cn_df, num, size, nChroms)
+        analysis(nodes, nCycles, cycleID, lmbda, chromLengths, DSBmat, cn_df, num, size, nChroms, nBiasedChroms)
 
 
         # end of cycle cleaning:

@@ -32,7 +32,6 @@ CN_data <- CNVsegs(chrom=as.character(CNData_svgen$chromosome),
 library(ShatterSeek)
 start_time <- Sys.time()
 chromothripsis <- shatterseek(SV.sample=SV_data, seg.sample=CN_data)
-
 end_time <- Sys.time()
 print(paste0("Running time (s): ",round(end_time - start_time,digits=2)))
 
@@ -52,7 +51,7 @@ plot_chr3 = arrangeGrob(plots_chr3[[1]],
 						plots_chr3[[4]], 
 						nrow=4,ncol=1,heights=c(0.2,.4,.4,.4))
 
-plots_chr2 = plot_chromothripsis(ShatterSeek_output = chromothripsis,chr = "5") 
+plots_chr2 = plot_chromothripsis(ShatterSeek_output = chromothripsis,chr = "13") 
 plot_chr2 = arrangeGrob(plots_chr2[[1]],
                         plots_chr2[[2]],
                         plots_chr2[[3]],

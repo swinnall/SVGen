@@ -11,6 +11,7 @@ import sv_gen
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
+import csv
 import sys
 
 
@@ -31,13 +32,15 @@ def readSumStatsTotal(nChroms):
     # read SVGen parameter info
     r_par_TSV = '../output/sumstats/sumStats_total.tsv'
     par_df    = pd.read_csv(r_par_TSV, sep="\t")
-    nDSB      = par_df.iat[0,0]
-    nDel      = par_df.iat[0,1]
-    nInv      = par_df.iat[0,2]
-    nIns      = par_df.iat[0,3]
-    nDup      = par_df.iat[0,4]
+    nDSB      = par_df.iat[1,0]
+    nDel      = par_df.iat[1,1]
+    nInv      = par_df.iat[1,2]
+    nIns      = par_df.iat[1,3]
+    nDup      = par_df.iat[1,4]
+    cycleID   = par_df.iat[1,5]
+    nBiasedChroms = par_df.iat[1,6]
 
-    return nDSB, nDel, nInv, nIns, nDup
+    return nDSB, nDel, nInv, nIns, nDup, nBiasedChroms
 
 
 def checkChromothripsis(nChroms, analysisType):
@@ -158,7 +161,7 @@ def acceptReject(d, nChroms):
     chromCount = 0
     for i in range(nChroms):
 
-        if d[i][0] < 1:
+        if d[i][0] <= 4:
             chromCount += 1
             outcome = True
 
@@ -215,7 +218,7 @@ def main():
     mem = []
 
     # run simulation N times
-    N = 100
+    N = 1000
     for i in range(N):
 
         # generate SVs
@@ -224,13 +227,16 @@ def main():
         if analysisType == 'countSV':
 
             # import summary statistics of whole simulation
-            nDSB, nDel, nInv, nIns, nDup = readSumStatsTotal(nChroms)
+            nDSB, nDel, nInv, nIns, nDup, cycleID, nBiasedChroms = readSumStatsTotal(nChroms)
 
             # save to memory
-            mem.append( (nDSB, nDel, nInv, nIns, nDup))
+            mem.append( (nDSB, nDel, nInv, nIns, nDup, nBiasedChroms))
 
 
         elif analysisType == 'check_chromothripsis':
+
+            # import summary statistics of whole simulation
+            nDSB, nDel, nInv, nIns, nDup, nBiasedChroms = readSumStatsTotal(nChroms)
 
             # generate distance to SS
             d = checkChromothripsis(nChroms, analysisType)
@@ -240,9 +246,10 @@ def main():
 
             # append simulation info to memory
             if outcome == True:
-                mem.append( (d, nDSB) )
+                mem.append( (d, nDSB, nBiasedChroms) )
                 print("Chromothripsis generated, d = %s." %min(d))
-                sys.exit()
+                ## uncomment if want to stop immediately at chromothripsis
+                #sys.exit()
 
 
         elif analysisType == 'determine_params':
@@ -255,6 +262,8 @@ def main():
 
             # distance between statistics
             d = calc_d(nChroms, p, q, analysisType)
+
+            print("\n\n %s \n\n" %d)
 
             # determine validity of simulation
             outcome = acceptReject(d, nChroms)
@@ -270,8 +279,15 @@ def main():
 
 
     if len(mem) > 0 and (analysisType == 'countSV' or analysisType == 'determine_params'):
-        print("number of accepted simulations: %s" %(len(mem)/N))
         plotAnalysis(analysisType, dataType, mem)
+        print("number of accepted simulations: %s" %(len(mem)/N))
+
+    if analysisType == 'check_chromothripsis':
+        print("number of accepted simulations: %s" %(len(mem)/N))
+        print("mem: %s" %mem)
+        with open('../output/sumstats/prob_trends/nDSBS/nDSB_100.tsv', 'w', newline='') as file:
+            writer = csv.writer(file, delimiter = '\t')
+            writer.writerow([len(mem)/N])
 
 
     mem.clear()
