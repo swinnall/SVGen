@@ -109,7 +109,7 @@ def calc_q(nChroms, dataType):
 
         q = [ [] for i in range(nChroms)]
 
-        r_chromo_stats_TSV = '../input/real_chromo.tsv'
+        r_chromo_stats_TSV = '../input/PCAWG/real_chromo.tsv'
         real_df = pd.read_csv(r_chromo_stats_TSV, sep="\t")
 
         for i in range(nChroms):
@@ -161,7 +161,7 @@ def acceptReject(d, nChroms):
     chromCount = 0
     for i in range(nChroms):
 
-        if d[i][0] <= 1:
+        if d[i][0] <= 2.5:
             chromCount += 1
             outcome = True
 
@@ -208,8 +208,8 @@ def main():
     analysisType = 'determine_params'
 
     ## state type of data being read
-    dataType = 'model'
-    #dataType = 'real'
+    #dataType = 'model'
+    dataType = 'real'
 
     # define number of chromosomes
     nChroms = 22
