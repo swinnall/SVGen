@@ -1,0 +1,142 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1671\cocoasubrtf200
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww17560\viewh12440\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 \
+\'97 Preamble \'97 \
+\
+\
+working directory\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+\cf0 \'97\'97\'97\'97\'97\'97\'97\'97\
+sv-model/main/\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+\cf0 \
+\
+\
+Scripts\
+\'97\'97\'97\'97\
+run SVGen:             \
+	python sv_gen.py\
+\
+run ABC: 		      \
+	python abc.py \
+\
+\
+\
+Plotting\
+\'97\'97\'97\'97\
+\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+\cf0 python chromothProb_selection.py  \
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+\cf0 \
+python chromothProb_g1.py \
+\
+python chromothProb_nDSBs.py \
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+\cf0 \
+python chromothProb_cycles.py\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+\cf0 \
+\
+\
+\
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\pardirnatural\partightenfactor0
+\cf0 \
+\'97 Simulations Instructions \'97 \
+\
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\
+1.  Quantifying SVs \
+\
+The files are currently set up to run this simulation. \
+Simply run: python abc.py in the above working directory. \
+\
+\
+\
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\
+2.  Probability of Chromothripsis under Biased Chromosome Selection \
+\
+This experiment will consist of running ABC three times. \
+\
+In abc.py: \
+	comment out line 196\
+	uncomment line 197\
+\
+	set working directory for probability output in line 279:  /output/sumstats/prob_trends/selection\
+	with the correct suffix,  e.g. prob_neutral.tsv    (see below for more detail)\
+\
+This sets simulation to check for chromothripsis and exports to the right file. \
+\
+\
+In sv_gen.py:\
+	comment out line 1675\
+	uncomment line 1674\
+\
+This sets SVGen to neutral chromosome selection. Each run of abc.py will follow a different selection bias, i.e. first \'91neutral\'92, then \'91biased\'92, then \'91fixed\'92. \
+\
+\
+After each three distribution types have been recorded. Plot via: python chromothProb_selection.py \
+\
+\
+\
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\
+3.  Probability of Chromothripsis under Variable G1 repairs \
+\
+\
+In abc.py now change the working directory to:  output/sumstats/prob_trends/unconnected_G1\
+	with the suffix lambda_0.tsv where 0 is the number lambda has been set to (e.g. 0, 5, 10, 50, 100)\
+\
+Each of these is again 1 iteration of the ABC script and the working directories will need to be updated each run.\
+Expect computation time to increase with increasing lambda due to increased complexity. \
+\
+\
+Lambda is updated in SVGen via line 1680. \
+\
+After completion, the data can be plotted via:  python chromothProb_g1.py \
+\
+After experiment, lambda needs to be reset to 5. \
+\
+\
+\
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\
+4.  Probability of Chromothripsis under Variable nDSBs\
+\
+\
+In abc.py now change the working directory to:  /output/sumstats/prob_trends/nDSBs\
+	with the suffix nDSB_0 where 0 is the number nDSB has been set to (e.g. 0, 5, 10, 50, 100)\
+\
+\
+Each of these is again 1 iteration of the ABC script and the working directories will need to be updated each run.\
+Expect computation time to increase with increasing lambda due to increased complexity. \
+\
+\
+nDSB is updated in SVGen via lines 1694 - 1699\
+	Min and max refer to the range available for introducing DSBs. Typically this number is selected stochastically each time.\
+	However, this experiment requires both min and max to be set to the same value, e.g. 0, 5, 10, 50, 100\
+\
+\
+After completion, the data can be plotted via:  python chromothProb_nDSBs.py \
+\
+After experiment, reset back to minDSB = 0, maxDSB = 40 for both if else statements. \
+\
+\
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\
+5.  Probability of Chromothripsis under nCell Cycles \
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+\
+}

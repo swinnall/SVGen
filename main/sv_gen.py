@@ -1671,9 +1671,9 @@ def main():
     DSBmat = [ [0,0] for i in range(nChroms)]
 
     # define matrix preferencing chromosomes
-    #matType = 'random'
+    matType = 'random'
     #matType = 'biased'
-    matType = 'fixed'
+    #matType = 'fixed'
     chromMat, nBiasedChroms = matPref(matType, nChroms)
 
     # parameters

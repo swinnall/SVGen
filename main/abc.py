@@ -15,18 +15,6 @@ import csv
 import sys
 
 
-def copy(src, dest):
-    try:
-        shutil.copytree(src, dest)
-    except OSError as e:
-        # If the error was caused because the source wasn't a directory
-        if e.errno == errno.ENOTDIR:
-            shutil.copy(src, dest)
-        else:
-            print('Directory not copied. Error: %s' % e)
-    return
-
-
 def readSumStatsTotal(nChroms):
 
     # read SVGen parameter info
@@ -175,13 +163,13 @@ def plotAnalysis(analysisType, dataType, mem):
 
         sv_data = []
         for i in range(len(mem)):
+            # extract data from successful summary statistics stored in memory
             sv_data.append( (mem[i][0], mem[i][1], mem[i][2], mem[i][3], mem[i][4]) )
 
+        # create dataframe
         sv_df = pd.DataFrame(sv_data, columns=['nDSB','nDel','nInv','nIns', 'nDup'])
 
-        sns_plot = sns.violinplot(data=sv_df) #x="SV Type", y="Count",
-
-
+        sns_plot = sns.violinplot(data=sv_df)
         plt.savefig("../output/sumstats/sv_count.png")
 
 
@@ -189,8 +177,10 @@ def plotAnalysis(analysisType, dataType, mem):
 
         dsbData = []
         for i in range(len(mem)):
+            # extract data from successful summary statistics stored in memory
             dsbData.append( mem[i][1] )
 
+        # create dataframe
         dsb_df = pd.DataFrame(dsbData, columns=['nDSB'])
         print('total number of dsbs per successful simulation: \n%s' %dsb_df)
 
@@ -203,13 +193,13 @@ def plotAnalysis(analysisType, dataType, mem):
 def main():
 
     ## outline purpose of program
-    #analysisType = 'countSV'
+    analysisType = 'countSV'
     #analysisType = 'check_chromothripsis'
-    analysisType = 'determine_params'
+    #analysisType = 'determine_params'
 
     ## state type of data being read
-    #dataType = 'model'
-    dataType = 'real'
+    dataType = 'model'
+    #dataType = 'real'
 
     # define number of chromosomes
     nChroms = 22
@@ -218,12 +208,13 @@ def main():
     mem = []
 
     # run simulation N times
-    N = 1000
+    N = 10000
     for i in range(N):
 
         # generate SVs
         sv_gen.main()
 
+        # generating violin plot for counting SV accumulation
         if analysisType == 'countSV':
 
             # import summary statistics of whole simulation
@@ -233,12 +224,15 @@ def main():
             mem.append( (nDSB, nDel, nInv, nIns, nDup, nBiasedChroms))
 
 
+        # runs SVGen until chromothripsis criteria is met,
+        # either stops program for analysis of that particular case
+        # or counts number of chromothripsis cases in N iterations
         elif analysisType == 'check_chromothripsis':
 
-            # import summary statistics of whole simulation
+            # import summary statistics of SVGen
             nDSB, nDel, nInv, nIns, nDup, nBiasedChroms = readSumStatsTotal(nChroms)
 
-            # generate distance to SS
+            # generate distance to summary statistics
             d = checkChromothripsis(nChroms, analysisType)
 
             # determine validity of simulation
@@ -248,10 +242,11 @@ def main():
             if outcome == True:
                 mem.append( (d, nDSB, nBiasedChroms) )
                 print("Chromothripsis generated, d = %s." %min(d))
-                ## uncomment if want to stop immediately at chromothripsis
-                sys.exit()
+                ## uncomment to stop immediately at chromothripsis
+                #sys.exit()
 
 
+        # for determining parameters / number of DSBs in chromothripsis
         elif analysisType == 'determine_params':
 
             # model/real data summary statistics by chromosome
@@ -263,8 +258,6 @@ def main():
             # distance between statistics
             d = calc_d(nChroms, p, q, analysisType)
 
-            print("\n\n %s \n\n" %d)
-
             # determine validity of simulation
             outcome = acceptReject(d, nChroms)
 
@@ -275,26 +268,21 @@ def main():
                     total_DSB += p[i][0]
                 mem.append( (d, total_DSB) )
 
-            # clear variables
-            #p.clear()
-            #q.clear()
-            #d.clear()
-
 
     if len(mem) > 0 and (analysisType == 'countSV' or analysisType == 'determine_params'):
         plotAnalysis(analysisType, dataType, mem)
         print("number of accepted simulations: %s" %(len(mem)/N))
 
-    #if analysisType == 'check_chromothripsis':
-    #    print("number of accepted simulations: %s" %(len(mem)/N))
-    #    print("mem: %s" %mem)
-    #    with open('../output/sumstats/prob_trends/nCycles/2cycle.tsv', 'w', newline='') as file:
-    #        writer = csv.writer(file, delimiter = '\t')
-    #        writer.writerow([len(mem)/N])
+    if analysisType == 'check_chromothripsis':
+        print("number of accepted simulations: %s" %(len(mem)/N))
+        print("mem: %s" %mem)
+        with open('../output/sumstats/prob_trends/nCycles/2cycle.tsv', 'w', newline='') as file:
+            writer = csv.writer(file, delimiter = '\t')
+            writer.writerow([len(mem)/N])
 
 
     mem.clear()
-    print("End of simulation.")
+    print("~~ End of simulation ~~")
     return
 
 

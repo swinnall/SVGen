@@ -25,11 +25,8 @@ probB = pd.read_csv(r_prob_bias_TSV, sep="\t")
 r_prob_forced_TSV = '../output/sumstats/prob_trends/selection/prob_forced.tsv'
 probF = pd.read_csv(r_prob_forced_TSV, sep="\t")
 
-r_prob_Sforced_TSV = '../output/sumstats/prob_trends/selection/prob_sforced.tsv'
-probSf = pd.read_csv(r_prob_Sforced_TSV, sep="\t")
-
 # create dataframe
-prob_df = pd.DataFrame(list(zip(probN, probB, probF, probSf)), columns=['Neutral', 'Biased', 'Forced', 'Strong Forced'])
+prob_df = pd.DataFrame(list(zip(probN, probB, probF)), columns=['Neutral', 'Biased', 'Forced'])
 
 # plot figure
 sns_plot = sns.barplot(data=prob_df)
