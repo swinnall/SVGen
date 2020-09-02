@@ -55,6 +55,8 @@ python chromothProb_cycles.py\
 The files are currently set up to run this simulation. \
 Simply run: python abc.py in the above working directory. \
 \
+The plot will be available in the following directory: /output/sumstats/sv_count.png\
+\
 \
 \
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\
@@ -80,6 +82,8 @@ This sets SVGen to neutral chromosome selection. Each run of abc.py will follow 
 \
 \
 After each three distribution types have been recorded. Plot via: python chromothProb_selection.py \
+\
+After experiment, the distribution needs to be set back to \'91biased\'92 (e.g. comment out all the others)\
 \
 \
 \
@@ -107,7 +111,7 @@ After experiment, lambda needs to be reset to 5. \
 \
 \
 In abc.py now change the working directory to:  /output/sumstats/prob_trends/nDSBs\
-	with the suffix nDSB_0 where 0 is the number nDSB has been set to (e.g. 0, 5, 10, 50, 100)\
+	with the suffix nDSB_0.tsv where 0 is the number nDSB has been set to (e.g. 0, 5, 10, 50, 100)\
 \
 \
 Each of these is again 1 iteration of the ABC script and the working directories will need to be updated each run.\
@@ -124,10 +128,17 @@ After completion, the data can be plotted via:  python chromothProb_nDSBs.py \
 After experiment, reset back to minDSB = 0, maxDSB = 40 for both if else statements. \
 \
 \
+\
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\
 5.  Probability of Chromothripsis under nCell Cycles \
 \
 \
+In abc.py now change the working directory to:  /output/sumstats/prob_trends/nCycles/\
+	with the suffix 1cycle.tsv where 1 is the number of cell cycles  (e.g. 1, 2)\
+\
+Each of these is again 1 iteration of the ABC script and the working directories will need to be updated each run.\
+\
+nCycles is accessed in SVGen via line 1681\
 \
 \
 \

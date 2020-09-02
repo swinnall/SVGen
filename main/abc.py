@@ -20,15 +20,16 @@ def readSumStatsTotal(nChroms):
     # read SVGen parameter info
     r_par_TSV = '../output/sumstats/sumStats_total.tsv'
     par_df    = pd.read_csv(r_par_TSV, sep="\t")
-    nDSB      = par_df.iat[1,0]
-    nDel      = par_df.iat[1,1]
-    nInv      = par_df.iat[1,2]
-    nIns      = par_df.iat[1,3]
-    nDup      = par_df.iat[1,4]
-    cycleID   = par_df.iat[1,5]
-    nBiasedChroms = par_df.iat[1,6]
+    nDSB      = par_df.iat[0,0]
+    nDel      = par_df.iat[0,1]
+    nInv      = par_df.iat[0,2]
+    nIns      = par_df.iat[0,3]
+    nDup      = par_df.iat[0,4]
+    cycleID   = par_df.iat[0,5]
+    nBiasedChroms = par_df.iat[0,6]
+    nMitosisBreaks = par_df.iat[0,7]
 
-    return nDSB, nDel, nInv, nIns, nDup, nBiasedChroms
+    return nDSB, nDel, nInv, nIns, nDup, nBiasedChroms, nMitosisBreaks
 
 
 def checkChromothripsis(nChroms, analysisType):
@@ -149,7 +150,8 @@ def acceptReject(d, nChroms):
     chromCount = 0
     for i in range(nChroms):
 
-        if d[i][0] <= 2.5:
+        # set to 4 to consider low confidence chromothripsis cases
+        if d[i][0] <= 4:
             chromCount += 1
             outcome = True
 
@@ -164,10 +166,10 @@ def plotAnalysis(analysisType, dataType, mem):
         sv_data = []
         for i in range(len(mem)):
             # extract data from successful summary statistics stored in memory
-            sv_data.append( (mem[i][0], mem[i][1], mem[i][2], mem[i][3], mem[i][4]) )
+            sv_data.append( (mem[i][0], mem[i][1], mem[i][2], mem[i][3], mem[i][4], mem[i][5]) )
 
         # create dataframe
-        sv_df = pd.DataFrame(sv_data, columns=['nDSB','nDel','nInv','nIns', 'nDup'])
+        sv_df = pd.DataFrame(sv_data, columns=['nDSB','nDel','nInv','nIns', 'nDup', 'nMitosisBreaks'])
 
         sns_plot = sns.violinplot(data=sv_df)
         plt.savefig("../output/sumstats/sv_count.png")
@@ -218,10 +220,10 @@ def main():
         if analysisType == 'countSV':
 
             # import summary statistics of whole simulation
-            nDSB, nDel, nInv, nIns, nDup, cycleID, nBiasedChroms = readSumStatsTotal(nChroms)
+            nDSB, nDel, nInv, nIns, nDup, nBiasedChroms, nMitosisBreaks = readSumStatsTotal(nChroms)
 
             # save to memory
-            mem.append( (nDSB, nDel, nInv, nIns, nDup, nBiasedChroms))
+            mem.append( (nDSB, nDel, nInv, nIns, nDup, nMitosisBreaks))
 
 
         # runs SVGen until chromothripsis criteria is met,
@@ -243,6 +245,7 @@ def main():
                 mem.append( (d, nDSB, nBiasedChroms) )
                 print("Chromothripsis generated, d = %s." %min(d))
                 ## uncomment to stop immediately at chromothripsis
+                ## leave commented for studying distribution of chromothripsis
                 #sys.exit()
 
 

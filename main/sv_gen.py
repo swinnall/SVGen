@@ -1153,7 +1153,7 @@ def checkInv(nodes, pathList):
     return nodes
 
 
-def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos, DSBmat):
+def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos, DSBmat, nMitosisBreaks):
     # called when number of centromeres in a path exceeds 1
     # function chooses breakpoint location, introduces new breakpoints and forms connections
 
@@ -1167,6 +1167,9 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos, DSBmat)
     n = 0
 
     # nCent - 1 = number of breakpoints
+    nMitosisBreaks += nCent - 1
+
+    # iterate along for number of breaks
     for j in range(int(nCent)-1):
 
         # segment options for breakpoints
@@ -1399,10 +1402,10 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos, DSBmat)
                     nodes[nodeID]["cellID"] = daughterCell
                     nodes[nodeID]["cn"] = 0
 
-    return nodes, DSBmat
+    return nodes, DSBmat, nMitosisBreaks
 
 
-def mitosis(nodes, pathList, cycleID, nCycles, centromerePos, DSBmat):
+def mitosis(nodes, pathList, cycleID, nCycles, centromerePos, DSBmat, nMitosisBreaks):
     # assigns paths to daughter cells based on number of centromeres in the path
     print('\nEntering M\n')
 
@@ -1428,15 +1431,16 @@ def mitosis(nodes, pathList, cycleID, nCycles, centromerePos, DSBmat):
 
         elif nCent > 1:
             # mitosis breakage
-            nodes, DSBmat = cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos, DSBmat)
+            nodes, DSBmat, nMitosisBreaks = cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos, DSBmat, nMitosisBreaks)
 
-    return nodes, DSBmat
+
+    return nodes, DSBmat, nMitosisBreaks
 
 
 ################################################################################
 ## Analysis Code:
 # Generates summary statistcs for final analysis
-def sumStats(nodes, nChroms, nIns, nInv, cn_df, num, size, cycleID, DSBmat, nBiasedChroms):
+def sumStats(nodes, nChroms, nIns, nInv, cn_df, num, size, cycleID, DSBmat, nBiasedChroms, nMitosisBreaks):
 
     ## code for merging segments for oscillating cn statistic
     # create merged haplotype data frame
@@ -1596,12 +1600,12 @@ def sumStats(nodes, nChroms, nIns, nInv, cn_df, num, size, cycleID, DSBmat, nBia
 
     with open('../output/sumstats/sumStats_total.tsv', 'a', newline='') as file:
         writer = csv.writer(file, delimiter = '\t')
-        writer.writerow([DSB_tot, nDel_tot, nIns_tot, nInv_tot, nDup_tot, cycleID, nBiasedChroms])
+        writer.writerow([DSB_tot, nDel_tot, nIns_tot, nInv_tot, nDup_tot, cycleID, nBiasedChroms, int(nMitosisBreaks)])
 
     return
 
 
-def analysis(nodes, nCycles, cycleID, lmbda, chromLengths, DSBmat, cn_df, num, size, nChroms, nBiasedChroms):
+def analysis(nodes, nCycles, cycleID, lmbda, chromLengths, DSBmat, cn_df, num, size, nChroms, nBiasedChroms, nMitosisBreaks):
 
     # create files for writing to
     if cycleID == 0:
@@ -1620,7 +1624,7 @@ def analysis(nodes, nCycles, cycleID, lmbda, chromLengths, DSBmat, cn_df, num, s
         # summary statistics for the whole system
         with open('../output/sumstats/sumStats_total.tsv', 'w', newline='') as file:
             writer = csv.writer(file, delimiter = '\t')
-            writer.writerow(["nDSB", "nDel", "nInv", "nIns", "nDup", 'cycleID', 'nBiasedChroms'])
+            writer.writerow(["nDSB", "nDel", "nInv", "nIns", "nDup", 'cycleID', 'nBiasedChroms', 'nMitosisBreaks'])
 
         # summary statistics for each chromosome
         with open('../output/sumstats/sumStats_chrom.tsv', 'w', newline='') as file:
@@ -1646,7 +1650,7 @@ def analysis(nodes, nCycles, cycleID, lmbda, chromLengths, DSBmat, cn_df, num, s
 
     # generate summary statistics in final cell cycle
     if cycleID == nCycles-1:
-        sumStats(nodes, nChroms, nIns, nInv, cn_df, num, size, cycleID, DSBmat, nBiasedChroms)
+        sumStats(nodes, nChroms, nIns, nInv, cn_df, num, size, cycleID, DSBmat, nBiasedChroms, nMitosisBreaks)
 
     return
 
@@ -1670,15 +1674,18 @@ def main():
     # initialise the number of DSBs on each chromosome
     DSBmat = [ [0,0] for i in range(nChroms)]
 
+    # initialise the number of breaks at mitosis
+    nMitosisBreaks = 0
+
     # define matrix preferencing chromosomes
-    matType = 'random'
-    #matType = 'biased'
+    #matType = 'random'
+    matType = 'biased'
     #matType = 'fixed'
     chromMat, nBiasedChroms = matPref(matType, nChroms)
 
     # parameters
     lmbda   = 5    # max number of unrepaired segments a cell can handle
-    nCycles = 2    # number of cell cycles - make stochastic at some point
+    nCycles = 2    # number of cell cycles
 
     # determine segment size of cn_df
     size = int(50E5)
@@ -1745,7 +1752,7 @@ def main():
 
 
         # mitosis phase
-        nodes, DSBmat = mitosis(nodes, pathList, cycleID, nCycles, centromerePos, DSBmat)
+        nodes, DSBmat, nMitosisBreaks = mitosis(nodes, pathList, cycleID, nCycles, centromerePos, DSBmat, nMitosisBreaks)
 
 
         # initialise cn information
@@ -1753,7 +1760,7 @@ def main():
 
 
         # open output file for writing SV data
-        analysis(nodes, nCycles, cycleID, lmbda, chromLengths, DSBmat, cn_df, num, size, nChroms, nBiasedChroms)
+        analysis(nodes, nCycles, cycleID, lmbda, chromLengths, DSBmat, cn_df, num, size, nChroms, nBiasedChroms, nMitosisBreaks)
 
 
         # end of cycle cleaning:
