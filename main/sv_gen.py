@@ -439,8 +439,8 @@ def matPref(matType, nChroms):
         chromMat = [0 for i in range(nChroms)]
         # same probability bias as before for reproducibility
         # choose g target chromosomes, -1 for index, advised to choose up to 3 targets max
-        g1 = 3; g2 = 5
-        selectedChromosomes = [g1-1, g2-1] # exmaple of 3 targets: [g1-1, g2-1, g3-1]
+        g1 = 3
+        selectedChromosomes = [g1-1] # exmaple of 3 targets: [g1-1, g2-1, g3-1]
         nBiasedChroms = len(selectedChromosomes)
 
         p0 = 0.667
