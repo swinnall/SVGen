@@ -13,13 +13,17 @@ import pandas as pd
 import seaborn as sns
 import csv
 import sys
+import argparse
+import os
 
-
-def readSumStatsTotal(nChroms):
-
+def readSumStatsTotal(nChroms, sumStats_total, r_par_TSV=''):
     # read SVGen parameter info
-    r_par_TSV = '../output/sumstats/sumStats_total.tsv'
-    par_df    = pd.read_csv(r_par_TSV, sep="\t")
+    if r_par_TSV != '':
+        r_par_TSV = '../output/sumstats/sumStats_total.tsv'
+        par_df = pd.read_csv(r_par_TSV, sep="\t")
+    else:
+        par_df = sumStats_total
+
     nDSB      = par_df.iat[0,0]
     nDel      = par_df.iat[0,1]
     nInv      = par_df.iat[0,2]
@@ -32,7 +36,7 @@ def readSumStatsTotal(nChroms):
     return nDSB, nDel, nInv, nIns, nDup, nBiasedChroms, nMitosisBreaks
 
 
-def checkChromothripsis(nChroms, analysisType):
+def checkChromothripsis(nChroms, analysisType, sumStats_chrom, r_sumStats_TSV = ''):
 
     ## Generate Summary Statistics from Criteria ##
     nOscCriteria = 10
@@ -41,7 +45,7 @@ def checkChromothripsis(nChroms, analysisType):
     q = [[nOscCriteria, nbpCriteria] for i in range(nChroms)]
 
     # parameters from simulation
-    p = calc_p(nChroms)
+    p = calc_p(nChroms, sumStats_chrom, r_sumStats_TSV)
 
     # distance between the two
     d = calc_d(nChroms, p, q, analysisType)
@@ -49,11 +53,14 @@ def checkChromothripsis(nChroms, analysisType):
     return d
 
 
-def calc_p(nChroms):
+def calc_p(nChroms, sumStats_chrom, r_sumStats_TSV = ''):
 
     ## Read Summary Statistics from Simulation ##
-    r_sumStats_TSV = '../output/sumstats/sumStats_chrom.tsv'
-    sumStat_df = pd.read_csv(r_sumStats_TSV, sep="\t")
+    # r_sumStats_TSV = '../output/sumstats/sumStats_chrom.tsv'
+    if r_sumStats_TSV != '':
+        sumStat_df = pd.read_csv(r_sumStats_TSV, sep="\t")
+    else:
+        sumStat_df = sumStats_chrom
 
     p = [ [] for i in range(nChroms)]
 
@@ -142,7 +149,7 @@ def calc_d(nChroms, p, q, analysisType):
     return d
 
 
-def acceptReject(d, nChroms):
+def acceptReject(d, nChroms, verbose = 0):
     # scans d; if any chromosome is within acceptable range then outcome == true
     # d and parameters are then saved in memory
 
@@ -155,7 +162,9 @@ def acceptReject(d, nChroms):
             chromCount += 1
             outcome = True
 
-    print("number of chromosomes affected: %s" %chromCount)
+    if verbose > 0:
+        print("number of chromosomes affected: %s" %chromCount)
+
     return outcome
 
 
@@ -193,11 +202,80 @@ def plotAnalysis(analysisType, dataType, mem):
 
 
 def main():
+    parser = argparse.ArgumentParser(description='Running abc')
+
+    default = 10000
+    parser.add_argument('-N', '--num_sim', default=default, type=int, help='number of simulations [{}]'.format(default))
+
+    default = 'countSV'
+    parser.add_argument('-a', '--analysisType', default=default, choices=['countSV', 'check_chromothripsis', 'determine_params'], help='type of analysis [{}]'.format(default))
+
+    default = 'biased'
+    parser.add_argument('-b', '--chr_bias', default=default, choices=['', 'random', 'biased', 'fixed'], help='type of analysis [{}]'.format(default))
+
+    default = 5
+    parser.add_argument('-l', '--lmbda', default=default, type=int, help='lambda [{}]'.format(default))
+
+    default = 0
+    parser.add_argument('-m', '--minDSB', default=default, type=int, help='minimum number of DSBs [{}]'.format(default))
+
+    default = 40
+    parser.add_argument('-M', '--maxDSB', default=default, type=int, help='maximum number of DSBs [{}]'.format(default))
+
+    default = 2
+    parser.add_argument('-n', '--nCycles', default=default, type=int, help='number of cell cycles [{}]'.format(default))
+
+    default = '../output/sumstats/prob_trends/nCycles/'
+    parser.add_argument('-o', '--outdir', default=default, help='output directory [{}]'.format(default))
+
+    default = '2cycle'
+    parser.add_argument('-p', '--prefix', default=default, help='prefix of output file [{}]'.format(default))
+
+    default = False
+    parser.add_argument('-c', '--write_cicos', default=default, action = 'store_true', help='whether or not to write out files for circos plots [{}]'.format(default))
+
+    default = False
+    parser.add_argument('-k', '--write_shatterseek', default=default, action = 'store_true', help='whether or not to write out files for shatterseek plots[{}]'.format(default))
+
+    default = False
+    parser.add_argument('-s', '--write_sumStats', default=default, action = 'store_true', help='whether or not to write out summary statistics [{}]'.format(default))
+
+    default = '../output/sumstats/sumStats_chrom.tsv'
+    parser.add_argument('--r_sumStats_TSV', default=default, help='the file with summary statistics of each chromosome [{}]'.format(default))
+
+    default = '../output/sumstats/sumStats_total.tsv'
+    parser.add_argument('--r_par_TSV', default=default, help='the file with summary statistics of all chromosomes [{}]'.format(default))
+
+    default = 0
+    parser.add_argument('--verbose', default=default, type=int, help='detail level of output information [{}]'.format(default))
+
+
+    args = parser.parse_args()
+
+    analysisType = args.analysisType
+    matType = args.chr_bias
+    lmbda = args.lmbda
+    minDSB = args.minDSB
+    maxDSB = args.maxDSB
+    nCycles = args.nCycles
+    outdir = args.outdir
+    prefix = args.prefix
+    write_cicos = args.write_cicos
+    write_shatterseek = args.write_shatterseek
+    write_sumStats = args.write_sumStats
+    r_sumStats_TSV = args.r_sumStats_TSV    # not used for now
+    r_par_TSV = args.r_par_TSV   # not used for now
+    verbose = args.verbose
 
     ## outline purpose of program
-    analysisType = 'countSV'
-    #analysisType = 'check_chromothripsis'
-    #analysisType = 'determine_params'
+    # if analysisType == 'sv':
+    #     analysisType = 'countSV'
+    # elif analysisType == 'check':
+    #     analysisType = 'check_chromothripsis'
+    # else:
+    #     analysisType = 'determine_params'
+
+    print('type of analysis is {}\n'.format(analysisType))
 
     ## state type of data being read
     dataType = 'model'
@@ -210,17 +288,23 @@ def main():
     mem = []
 
     # run simulation N times
-    N = 10000
+    N = args.num_sim
     for i in range(N):
-
+        print("simulation {}\n".format(i))
         # generate SVs
-        sv_gen.main()
+        sumStats_chrom, sumStats_total = sv_gen.main(matType, lmbda, minDSB, maxDSB, nCycles, write_cicos, write_shatterseek, write_sumStats, verbose)
+
+        # print(sumStats_chrom)
+        # print(sumStats_total)
+
+        r_par_TSV = ''
+        r_sumStats_TSV = ''
 
         # generating violin plot for counting SV accumulation
         if analysisType == 'countSV':
 
             # import summary statistics of whole simulation
-            nDSB, nDel, nInv, nIns, nDup, nBiasedChroms, nMitosisBreaks = readSumStatsTotal(nChroms)
+            nDSB, nDel, nInv, nIns, nDup, nBiasedChroms, nMitosisBreaks = readSumStatsTotal(nChroms, sumStats_total, r_par_TSV)
 
             # save to memory
             mem.append( (nDSB, nDel, nInv, nIns, nDup, nMitosisBreaks))
@@ -232,13 +316,13 @@ def main():
         elif analysisType == 'check_chromothripsis':
 
             # import summary statistics of SVGen
-            nDSB, nDel, nInv, nIns, nDup, nBiasedChroms = readSumStatsTotal(nChroms)
+            nDSB, nDel, nInv, nIns, nDup, nBiasedChroms, nMitosisBreaks = readSumStatsTotal(nChroms, sumStats_total, r_par_TSV)
 
             # generate distance to summary statistics
-            d = checkChromothripsis(nChroms, analysisType)
+            d = checkChromothripsis(nChroms, analysisType, sumStats_chrom, r_sumStats_TSV)
 
             # determine validity of simulation
-            outcome = acceptReject(d, nChroms)
+            outcome = acceptReject(d, nChroms, verbose)
 
             # append simulation info to memory
             if outcome == True:
@@ -274,18 +358,21 @@ def main():
 
     if len(mem) > 0 and (analysisType == 'countSV' or analysisType == 'determine_params'):
         plotAnalysis(analysisType, dataType, mem)
-        print("number of accepted simulations: %s" %(len(mem)/N))
+        print("number of accepted simulations: %d" %(len(mem)/N))
 
     if analysisType == 'check_chromothripsis':
-        print("number of accepted simulations: %s" %(len(mem)/N))
-        print("mem: %s" %mem)
-        with open('../output/sumstats/prob_trends/nCycles/2cycle.tsv', 'w', newline='') as file:
+        print("number of accepted simulations: %d" %(len(mem)/N))
+        print("mem: %s" % mem)
+
+        fout = os.path.join(outdir, prefix + '.tsv')
+        print("Writing output to file {}".format(fout))
+        with open(fout, 'w', newline='') as file:
             writer = csv.writer(file, delimiter = '\t')
             writer.writerow([len(mem)/N])
 
 
     mem.clear()
-    print("~~ End of simulation ~~")
+    print("\n~~ End of simulation ~~")
     return
 
 

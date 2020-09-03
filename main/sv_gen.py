@@ -60,7 +60,7 @@ class cirosPlot():
         self.cycleNum
         self.SVtype
 
-    def insertions(self, nodes, cycleID):
+    def insertions(self, nodes, cycleID, write_cicos = False, write_shatterseek = False):
         coveredNodes = []
         # for storing haplotype information for 22 chromosomes
         nIns = [ [0,0] for i in range(22)]
@@ -97,19 +97,20 @@ class cirosPlot():
                         nIns[chr1-1][happ] += 1
 
                         # write to csv
-                        with open('../output/circos/sv_data.tsv', 'a', newline='') as file:
-                            writer = csv.writer(file, delimiter = '\t')
-                            writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2,	extra, cycleNum])
+                        if write_cicos:
+                            with open('../output/circos/sv_data.tsv', 'a', newline='') as file:
+                                writer = csv.writer(file, delimiter = '\t')
+                                writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2,	extra, cycleNum])
 
                         # write to tsv - for ShatterSeek
-                        if cycleNum == 1:
+                        if cycleNum == 1 and write_shatterseek:
                             with open('../output/ShatterSeek/R/SVData.tsv', 'a', newline='') as file:
                                 writer = csv.writer(file, delimiter = '\t')
                                 writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2, SVtype])
 
         return nIns
 
-    def inversions(self, nodes, cycleID, chromLengths):
+    def inversions(self, nodes, cycleID, chromLengths, write_cicos = False, write_shatterseek = False):
         coveredNodes = []
         nInv = [ [0,0] for i in range(22)]
 
@@ -141,12 +142,13 @@ class cirosPlot():
                         nInv[chr1-1][happ] += 1
 
                         # write to csv
-                        with open('../output/circos/sv_data.tsv', 'a', newline='') as file:
-                            writer = csv.writer(file, delimiter = '\t')
-                            writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2,	extra, cycleNum])
+                        if write_cicos:
+                            with open('../output/circos/sv_data.tsv', 'a', newline='') as file:
+                                writer = csv.writer(file, delimiter = '\t')
+                                writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2,	extra, cycleNum])
 
                         # write to tsv - for ShatterSeek
-                        if cycleNum == 1:
+                        if cycleNum == 1 and write_shatterseek:
                             with open('../output/ShatterSeek/R/SVData.tsv', 'a', newline='') as file:
                                 writer = csv.writer(file, delimiter = '\t')
                                 writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2, SVtype])
@@ -167,12 +169,13 @@ class cirosPlot():
                     nInv[chr1-1][happ] += 1
 
                     # write to csv
-                    with open('../output/circos/sv_data.tsv', 'a', newline='') as file:
-                        writer = csv.writer(file, delimiter = '\t')
-                        writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2,	extra, cycleNum])
+                    if write_cicos:
+                        with open('../output/circos/sv_data.tsv', 'a', newline='') as file:
+                            writer = csv.writer(file, delimiter = '\t')
+                            writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2,	extra, cycleNum])
 
                     # write to tsv - for ShatterSeek
-                    if cycleNum == 1:
+                    if cycleNum == 1 and write_shatterseek:
                         with open('../output/ShatterSeek/R/SVData.tsv', 'a', newline='') as file:
                             writer = csv.writer(file, delimiter = '\t')
                             writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2, SVtype])
@@ -193,19 +196,20 @@ class cirosPlot():
                     nInv[chr1-1][happ] += 1
 
                     # write to csv
-                    with open('../output/circos/sv_data.tsv', 'a', newline='') as file:
-                        writer = csv.writer(file, delimiter = '\t')
-                        writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2,	extra, cycleNum])
+                    if write_cicos:
+                        with open('../output/circos/sv_data.tsv', 'a', newline='') as file:
+                            writer = csv.writer(file, delimiter = '\t')
+                            writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2,	extra, cycleNum])
 
                     # write to tsv - for ShatterSeek
-                    if cycleNum == 1:
+                    if cycleNum == 1 and write_shatterseek:
                         with open('../output/ShatterSeek/R/SVData.tsv', 'a', newline='') as file:
                             writer = csv.writer(file, delimiter = '\t')
                             writer.writerow([chr1, coord1, strand1, chr2, coord2, strand2, SVtype])
 
         return nInv
 
-    def duplications(self, nodes, cycleID, nChroms, chromLengths, cn_df, num, size):
+    def duplications(self, nodes, cycleID, nChroms, chromLengths, cn_df, num, size, write_cicos = False, write_shatterseek = False):
         # this Method populates the copy number dataframe (cn_df) with the CN information from the junctions
         # cn_df is initialised in cnProfiles function and provides the correct information format for plotting in Circos
         # for use in ShatterSeek the segments within cn_df are merged based on cn_valu, this is done in the SumStats function
@@ -301,9 +305,10 @@ class cirosPlot():
                 cycleNum = cycleID
 
                 # write cn data - for circos
-                with open('../output/circos/cn_data.tsv', 'a', newline='') as file:
-                    writer = csv.writer(file, delimiter = '\t')
-                    writer.writerow([chr1, start, end, cn_hap, cycleNum])
+                if write_cicos:
+                    with open('../output/circos/cn_data.tsv', 'a', newline='') as file:
+                        writer = csv.writer(file, delimiter = '\t')
+                        writer.writerow([chr1, start, end, cn_hap, cycleNum])
 
         return cn_df, num
 
@@ -317,7 +322,7 @@ class CheckBool():
     def __init__(self):
         return
 
-    def endGrowth(nodes, lmbda):
+    def endGrowth(nodes, lmbda, verbose = 0):
         # checks how many remaining breaks there are in G1
         # if less than lambda then G1 will stop
         tally = 0
@@ -325,12 +330,13 @@ class CheckBool():
 
             if nodes[i].get("M") == 'none' and nodes[i].get("cn") > 0:
                 tally += 1
-
-        print("%d remaining junctions.\n" %tally)
+        if verbose > 0:
+            print("%d remaining junctions.\n" %tally)
 
         if tally <= lmbda:
             endCondition = False
-            print("End of growth function.\n")
+            if verbose > 0:
+                print("End of growth function.\n")
         else:
             endCondition = True
 
@@ -349,11 +355,12 @@ class CheckBool():
 
         return telCondition
 
-    def checkCentromere(nodes,pathList,i):
+    def checkCentromere(nodes,pathList,i, verbose=0):
         # counts how many centromeres there are in a defined path
         tally    = 0
         centList = []
-        print('\nnext cent list info: ')
+        if verbose > 0:
+            print('\nnext centromere list info: ')
         for j in range(len(pathList.get(str(i)))):
             nodeID = pathList.get(str(i))[j]
 
@@ -440,7 +447,9 @@ def matPref(matType, nChroms):
         # same probability bias as before for reproducibility
         # choose g target chromosomes, -1 for index, advised to choose up to 3 targets max
         g1 = 3
-        selectedChromosomes = [g1-1] # exmaple of 3 targets: [g1-1, g2-1, g3-1]
+        # g2 = 5
+        selectedChromosomes = [g1-1]
+        # selectedChromosomes = [g1-1, g2-1] # exmaple of 3 targets: [g1-1, g2-1, g3-1]
         nBiasedChroms = len(selectedChromosomes)
 
         p0 = 0.667
@@ -456,8 +465,9 @@ def matPref(matType, nChroms):
     return chromMat, nBiasedChroms
 
 
-def generateNodes(nodes,nDSB,nChroms,chromLengths,firstEvent,chromMat,DSBmat):
-    print("\nEntering node generation\n")
+def generateNodes(nodes,nDSB,nChroms,chromLengths,firstEvent,chromMat,DSBmat, verbose = 0):
+    if verbose > 0:
+        print("\nEntering node generation\n")
 
     # reset prev path information
     for i in range(len(nodes)):
@@ -538,7 +548,8 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,firstEvent,chromMat,DSBmat):
         nodes.append(nodeData)
         uniqueID += 1
 
-    print("\nDetermining cn information\n")
+    if verbose > 0:
+        print("\nDetermining cn information\n")
 
     # initialise cn information
     if firstEvent == True:
@@ -547,7 +558,8 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,firstEvent,chromMat,DSBmat):
 
         if len(nodes) == 0:
             # check function - nodes should not be empty.
-            print("nodes empty - Unintended.")
+            if verbose > 0:
+                print("nodes empty - Unintended.")
             sys.exit()
 
         # cn would be default values in this scenario
@@ -616,10 +628,11 @@ def generateNodes(nodes,nDSB,nChroms,chromLengths,firstEvent,chromMat,DSBmat):
     return nodes, DSBmat
 
 
-def generateTelomeres(nodes):
+def generateTelomeres(nodes, verbose = 0):
     # generates telomeres based on whether a junction has any adjacent junctions further along the chromosome
     # i.e. if there are none, adjID = np.pi
-    print("\nEntering telomere generation\n")
+    if verbose > 0:
+        print("\nEntering telomere generation\n")
 
     for i in range(len(nodes)):
         nodeID = nodes[i].get("nodeID")
@@ -710,8 +723,9 @@ def findAdjacentJunction(nodes,nodeID):
     return nodeID
 
 
-def g1(nodes, lmbda):
-    print('\nEntering G1\n')
+def g1(nodes, lmbda, verbose = 0):
+    if verbose > 0:
+        print('\nEntering G1\n')
 
     # list available wild type connections
     # must not be deleted and must be a non-telomeric segment
@@ -726,7 +740,8 @@ def g1(nodes, lmbda):
         WTcondition = True
     else: WTcondition = False
 
-    print('Generating WT Connections')
+    if verbose > 0:
+        print('Generating WT Connections')
 
     # generate WT connections
     while WTcondition:
@@ -741,8 +756,9 @@ def g1(nodes, lmbda):
             nodes[nodeID]["WT"] = str(adjID)
             nodes[adjID]["WT"]  = str(nodeID)
 
-            print("start J:  %s" %nodeID)
-            print("WT J:     %s\n" %adjID)
+            if verbose > 1:
+                print("start J:  %s" %nodeID)
+                print("WT J:     %s\n" %adjID)
 
             # prevent repeat assignment
             lWT.remove(nodeID)
@@ -754,8 +770,8 @@ def g1(nodes, lmbda):
             WTcondition = True
         else: WTcondition = False
 
-
-    print('Generating M Connections\n')
+    if verbose > 0:
+        print('Generating M Connections\n')
     # list available mutant connections
     lM = []
     for i in range(len(nodes)):
@@ -789,10 +805,11 @@ def g1(nodes, lmbda):
         nodes[startNode]["M"] = str(joinNode)
         nodes[joinNode]["M"]  = str(startNode)
 
-        print("start J:  %s" %startNode)
-        print("joined J: %s" %joinNode)
+        if verbose > 1:
+            print("start J:  %s" %startNode)
+            print("joined J: %s" %joinNode)
 
-        endCondition = CheckBool.endGrowth(nodes, lmbda)
+        endCondition = CheckBool.endGrowth(nodes, lmbda, verbose)
 
     return nodes
 
@@ -843,10 +860,11 @@ def generateCentromeres(nodes, centromerePos):
     return nodes
 
 
-def connectedPathConstruction(nodes,pathList):
+def connectedPathConstruction(nodes, pathList, verbose = 0):
     # defines paths that start and end on a telomere prior to S phase
     # i.e. these paths are fully connected upon completion of G1
-    print("Entering Path Construction - Connected")
+    if verbose > 0:
+        print("Entering Path Construction - Connected")
 
     # locates all p telomeric junctions and sets as start of path
     pTel = []
@@ -904,14 +922,16 @@ def connectedPathConstruction(nodes,pathList):
         if len(temp) > 0:
             nPaths = len(pathList)
             pathList[str(nPaths)] = temp
-            print("Connected path: %s\n" %temp)
+            if verbose > 0:
+                print("Connected path: %s\n" %temp)
 
     return pathList
 
 
-def unconnectedPathConstruction(nodes):
+def unconnectedPathConstruction(nodes, verbose = 0):
     # stores unconnected paths for parsing to S phase
-    print("Entering Path Construction - Unconnected")
+    if verbose > 0:
+        print("Entering Path Construction - Unconnected")
 
     unconnected  = []
     telomeric    = []
@@ -922,7 +942,8 @@ def unconnectedPathConstruction(nodes):
         nodeID = nodes[i].get("nodeID")
         if nodes[nodeID].get("M") == 'none' and nodes[nodeID].get("cn") > 0:
             unconnected.append(nodeID)
-    print("Unconnected junctions: %s" %unconnected)
+    if verbose > 0:
+        print("Unconnected junctions: %s" %unconnected)
 
 
     # identifies replication type for the unconnected segments
@@ -975,16 +996,19 @@ def unconnectedPathConstruction(nodes):
             if len(temp) > 0:
                 nonTelomeric.append(temp)
 
-    print("unconnected telomeric segments:     %s" %telomeric)
-    print("unconnected non-telomeric segments: %s" %nonTelomeric)
+    if verbose > 0:
+        print("unconnected telomeric segments:     %s" %telomeric)
+        print("unconnected non-telomeric segments: %s" %nonTelomeric)
+
     return telomeric, nonTelomeric
 
 
-def syn_g2(nodes, pathList, telomeric, nonTelomeric):
+def syn_g2(nodes, pathList, telomeric, nonTelomeric, verbose = 0):
     # S phase going into G2
     # firstly replicates unconnected paths by adding new junctions (S)
     # then connects them (G2)
-    print('\nEntering S, G2\n')
+    if verbose > 0:
+        print('\nEntering S, G2\n')
 
     # lists for copied junctions
     telomericCopied    = [[] for i in range(len(telomeric))]
@@ -993,7 +1017,8 @@ def syn_g2(nodes, pathList, telomeric, nonTelomeric):
     # 1. unconnected telomeric paths
     uniqueID = len(nodes)
     for i in range(len(telomeric)):
-        print("\nNew path, key i: %s" %i)
+        if verbose > 0:
+            print("\nNew path, key i: %s" %i)
 
         # introduces new nodes to complete path
         for j in range(len(telomeric[i])):
@@ -1020,7 +1045,8 @@ def syn_g2(nodes, pathList, telomeric, nonTelomeric):
             telomericCopied[i].append(uniqueID)
             uniqueID += 1
 
-        print("%d node(s) added (unconnected path length)" %len(telomeric[i]))
+        if verbose > 0:
+            print("%d node(s) added (unconnected path length)" %len(telomeric[i]))
 
         # creates path
         temp = []
@@ -1038,8 +1064,9 @@ def syn_g2(nodes, pathList, telomeric, nonTelomeric):
 
         # path key:
         I = len(pathList)-1
-        print("telomeric: %s" %telomeric[i])
-        print("PathList:  %s" %pathList.get(str(I)))
+        if verbose > 0:
+            print("telomeric: %s" %telomeric[i])
+            print("PathList:  %s" %pathList.get(str(I)))
 
 
         # connection information
@@ -1113,8 +1140,9 @@ def syn_g2(nodes, pathList, telomeric, nonTelomeric):
         else: pass
 
         I = len(pathList)-1
-        print("non-telomeric: %s" %nonTelomeric[i])
-        print("PathList:      %s" %pathList.get(str(I)))
+        if verbose > 0:
+            print("non-telomeric: %s" %nonTelomeric[i])
+            print("PathList:      %s" %pathList.get(str(I)))
 
         # connection information
         for j in range(0, len(pathList.get(str(I)))-1, 2):
@@ -1153,7 +1181,7 @@ def checkInv(nodes, pathList):
     return nodes
 
 
-def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos, DSBmat, nMitosisBreaks):
+def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos, DSBmat, nMitosisBreaks, verbose = 0):
     # called when number of centromeres in a path exceeds 1
     # function chooses breakpoint location, introduces new breakpoints and forms connections
 
@@ -1197,8 +1225,9 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos, DSBmat,
 
         # choosing segment to insert breakpoint
         nodeChoice = int(np.random.choice(options,1))
-        print("\noptions: %s" %options)
-        print("decision: %s" %nodeChoice)
+        if verbose > 0:
+            print("\noptions: %s" %options)
+            print("decision: %s" %nodeChoice)
 
 
         # positional information
@@ -1326,7 +1355,8 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos, DSBmat,
 
             # leave hasCent assignment for next cell cycle
 
-    print("\nEntering subpath construction\npath: %s\n" %pathList.get(str(i)))
+    if verbose > 0:
+        print("\nEntering subpath construction\npath: %s\n" %pathList.get(str(i)))
     ## end of introducing breakpoints
 
     # define subpaths:
@@ -1337,7 +1367,8 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos, DSBmat,
         temp   = []
         temp.append(ele)
         nodeID = ele
-        print("newJuncStart: %s" %ele)
+        if verbose > 0:
+            print("newJuncStart: %s" %ele)
 
         subPathCondition = True
         while subPathCondition:
@@ -1346,13 +1377,15 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos, DSBmat,
             if nodes[nodeID].get("WT") != 'none':
                 nodeID = int(nodes[nodeID].get("WT"))
                 temp.append(nodeID)
-                print("Next connection (WT): %s" %nodeID)
+                if verbose > 0:
+                    print("Next connection (WT): %s" %nodeID)
 
                 # check next connection (M)
                 if nodes[nodeID].get("M") != 'none':
                     nodeID = int(nodes[nodeID].get("M"))
                     temp.append(nodeID)
-                    print("Next connection (M): %s" %nodeID)
+                    if verbose > 0:
+                        print("Next connection (M): %s" %nodeID)
 
                 # if no maxDSBtant connection, reached other junction
                 else:
@@ -1368,11 +1401,13 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos, DSBmat,
 
                 subPathCondition = False
 
-        print("temp: %s" %temp)
+        if verbose > 0:
+            print("temp: %s" %temp)
         subPaths.append(temp)
 
-    print('Subpaths: ')
-    print(subPaths)
+    if verbose > 0:
+        print('Subpaths: ')
+        print(subPaths)
 
     ## decide mitotic assignment and iterate along subpaths to delete
     # if two centromeres then 1 subpath will go to each daughter cell
@@ -1405,15 +1440,16 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos, DSBmat,
     return nodes, DSBmat, nMitosisBreaks
 
 
-def mitosis(nodes, pathList, cycleID, nCycles, centromerePos, DSBmat, nMitosisBreaks):
+def mitosis(nodes, pathList, cycleID, nCycles, centromerePos, DSBmat, nMitosisBreaks, verbose = 0):
     # assigns paths to daughter cells based on number of centromeres in the path
-    print('\nEntering M\n')
+    if verbose > 0:
+        print('\nEntering M\n')
 
     for i in range(len(pathList)):
         # randomly chooses daughter cell for assignment
         daughterCell = int(random.randint(0,1))
         # determines number of centromeres in path
-        nCent, centList = CheckBool.checkCentromere(nodes, pathList, i)
+        nCent, centList = CheckBool.checkCentromere(nodes, pathList, i, verbose)
 
         if nCent == 0:
         # stochastic assignment
@@ -1431,7 +1467,7 @@ def mitosis(nodes, pathList, cycleID, nCycles, centromerePos, DSBmat, nMitosisBr
 
         elif nCent > 1:
             # mitosis breakage
-            nodes, DSBmat, nMitosisBreaks = cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos, DSBmat, nMitosisBreaks)
+            nodes, DSBmat, nMitosisBreaks = cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos, DSBmat, nMitosisBreaks, verbose)
 
 
     return nodes, DSBmat, nMitosisBreaks
@@ -1439,8 +1475,10 @@ def mitosis(nodes, pathList, cycleID, nCycles, centromerePos, DSBmat, nMitosisBr
 
 ################################################################################
 ## Analysis Code:
-# Generates summary statistcs for final analysis
-def sumStats(nodes, nChroms, nIns, nInv, cn_df, num, size, cycleID, DSBmat, nBiasedChroms, nMitosisBreaks):
+# Generates summary statistics for final analysis
+def sumStats(nodes, nChroms, nIns, nInv, cn_df, num, size, cycleID, DSBmat, nBiasedChroms, nMitosisBreaks, write_cicos = False, write_shatterseek = False, write_sumStats = False):
+    sumStats_total = pd.DataFrame(columns=["nDSB", "nDel", "nInv", "nIns", "nDup", 'cycleID', 'nBiasedChroms', 'nMitosisBreaks'])
+    sumStats_chrom = pd.DataFrame(columns=["chr", "nDSB", "nOsc", "nDel", "nIns", "nInv", "nDup"])
 
     ## code for merging segments for oscillating cn statistic
     # create merged haplotype data frame
@@ -1525,10 +1563,11 @@ def sumStats(nodes, nChroms, nIns, nInv, cn_df, num, size, cycleID, DSBmat, nBia
 
                 # write SV deletions - for Circos (by haplotype)
                 # CN deletions/duplications written for Circos in circosPlot method
-                with open('../output/circos/sv_data.tsv', 'a', newline='') as file:
-                    writer = csv.writer(file, delimiter = '\t')
-                    # key: [chr, start, '+', chr, end, '-', 'svtype=DEL', cycleNum]
-                    writer.writerow([i+1, s1, '+', i+1, s1, '-', 'svtype=DEL', cycleID])
+                if write_cicos:
+                    with open('../output/circos/sv_data.tsv', 'a', newline='') as file:
+                        writer = csv.writer(file, delimiter = '\t')
+                        # key: [chr, start, '+', chr, end, '-', 'svtype=DEL', cycleNum]
+                        writer.writerow([i+1, s1, '+', i+1, s1, '-', 'svtype=DEL', cycleID])
 
                 # number of deletions gets updated each time chrom is called (either hapA or hapB)
                 nDel[i] += 1
@@ -1544,10 +1583,11 @@ def sumStats(nodes, nChroms, nIns, nInv, cn_df, num, size, cycleID, DSBmat, nBia
                 s1 = cn_df_merged.get(idx)[j][0]
                 e1 = cn_df_merged.get(idx)[j][1]
 
-                with open('../output/ShatterSeek/R/SVData.tsv', 'a', newline='') as file:
-                    writer = csv.writer(file, delimiter = '\t')
-                    # key: [chr1, start, '-', chr1, end, '+', "DUP"]
-                    writer.writerow([i+1, s1, '-', i+1, e1, '+', "DUP"])
+                if write_shatterseek:
+                    with open('../output/ShatterSeek/R/SVData.tsv', 'a', newline='') as file:
+                        writer = csv.writer(file, delimiter = '\t')
+                        # key: [chr1, start, '-', chr1, end, '+', "DUP"]
+                        writer.writerow([i+1, s1, '-', i+1, e1, '+', "DUP"])
 
             # write SV deletions - for shatterseek
             if cn_df_merged.get(idx)[j][2] < 2 and cycleID == 1:
@@ -1555,10 +1595,11 @@ def sumStats(nodes, nChroms, nIns, nInv, cn_df, num, size, cycleID, DSBmat, nBia
                 s1 = cn_df_merged.get(idx)[j][0]
                 e1 = cn_df_merged.get(idx)[j][1]
 
-                with open('../output/ShatterSeek/R/SVData.tsv', 'a', newline='') as file:
-                    writer = csv.writer(file, delimiter = '\t')
-                    # key: [chr1, start, '+', chr1, end, '-', "DEL"]
-                    writer.writerow([i+1, s1, '+', i+1, e1, '-', "DEL"])
+                if write_shatterseek:
+                    with open('../output/ShatterSeek/R/SVData.tsv', 'a', newline='') as file:
+                        writer = csv.writer(file, delimiter = '\t')
+                        # key: [chr1, start, '+', chr1, end, '-', "DEL"]
+                        writer.writerow([i+1, s1, '+', i+1, e1, '-', "DEL"])
 
 
     # calculate nOsc
@@ -1579,16 +1620,20 @@ def sumStats(nodes, nChroms, nIns, nInv, cn_df, num, size, cycleID, DSBmat, nBia
             end    = cn_df_merged.get(idx)[j][1]
             cn_tot = cn_df_merged.get(idx)[j][2]
 
-            with open('../output/shatterseek/R/CNData.tsv', 'a', newline='') as file:
-                writer = csv.writer(file, delimiter = '\t')
-                writer.writerow([chr1, start, end, cn_tot])
+            if write_shatterseek:
+                with open('../output/ShatterSeek/R/CNData.tsv', 'a', newline='') as file:
+                    writer = csv.writer(file, delimiter = '\t')
+                    writer.writerow([chr1, start, end, cn_tot])
 
-
-    # write summary statistics for sumstats inference
     for i in range(nChroms):
-        with open('../output/sumstats/sumStats_chrom.tsv', 'a', newline='') as file:
-            writer = csv.writer(file, delimiter = '\t')
-            writer.writerow([i+1, DSBmat[i][0]+DSBmat[i][1], nOsc[i], nDel[i], nIns[i][0]+nIns[i][1], nInv[i][0]+nInv[i][1], nDup[i]])
+        sumStats_chrom.loc[i] = [i+1, DSBmat[i][0]+DSBmat[i][1], nOsc[i], nDel[i], nIns[i][0]+nIns[i][1], nInv[i][0]+nInv[i][1], nDup[i]]
+    # write summary statistics for sumstats inference
+    if write_sumStats:
+        print("writing summary statistics for each chromosome")
+        for i in range(nChroms):
+            with open('../output/sumstats/sumStats_chrom.tsv', 'a', newline='') as file:
+                writer = csv.writer(file, delimiter = '\t')
+                writer.writerow([i+1, DSBmat[i][0]+DSBmat[i][1], nOsc[i], nDel[i], nIns[i][0]+nIns[i][1], nInv[i][0]+nInv[i][1], nDup[i]])
 
     DSB_tot = 0; nDel_tot = 0; nIns_tot = 0; nInv_tot = 0; nDup_tot = 0
     for i in range(nChroms):
@@ -1598,17 +1643,19 @@ def sumStats(nodes, nChroms, nIns, nInv, cn_df, num, size, cycleID, DSBmat, nBia
         nInv_tot += (nInv[i][0]+nInv[i][1])
         nDup_tot += nDup[i]
 
-    with open('../output/sumstats/sumStats_total.tsv', 'a', newline='') as file:
-        writer = csv.writer(file, delimiter = '\t')
-        writer.writerow([DSB_tot, nDel_tot, nIns_tot, nInv_tot, nDup_tot, cycleID, nBiasedChroms, int(nMitosisBreaks)])
+    sumStats_total.loc[1] = [DSB_tot, nDel_tot, nIns_tot, nInv_tot, nDup_tot, cycleID, nBiasedChroms, int(nMitosisBreaks)]
+    if write_sumStats:
+        print("writing summary statistics for all chromosomes")
+        with open('../output/sumstats/sumStats_total.tsv', 'a', newline='') as file:
+            writer = csv.writer(file, delimiter = '\t')
+            writer.writerow([DSB_tot, nDel_tot, nIns_tot, nInv_tot, nDup_tot, cycleID, nBiasedChroms, int(nMitosisBreaks)])
 
-    return
+    return sumStats_chrom, sumStats_total
 
 
-def analysis(nodes, nCycles, cycleID, lmbda, chromLengths, DSBmat, cn_df, num, size, nChroms, nBiasedChroms, nMitosisBreaks):
-
+def analysis(nodes, nCycles, cycleID, lmbda, chromLengths, DSBmat, cn_df, num, size, nChroms, nBiasedChroms, nMitosisBreaks, write_cicos = False, write_shatterseek = False, write_sumStats = False):
     # create files for writing to
-    if cycleID == 0:
+    if cycleID == 0 and write_cicos:
 
         with open('../output/circos/sv_data.tsv', 'w', newline='') as file:
             writer = csv.writer(file, delimiter = '\t')
@@ -1621,42 +1668,47 @@ def analysis(nodes, nCycles, cycleID, lmbda, chromLengths, DSBmat, cn_df, num, s
 
     if cycleID == 0: #nCycles-1:
 
-        # summary statistics for the whole system
-        with open('../output/sumstats/sumStats_total.tsv', 'w', newline='') as file:
-            writer = csv.writer(file, delimiter = '\t')
-            writer.writerow(["nDSB", "nDel", "nInv", "nIns", "nDup", 'cycleID', 'nBiasedChroms', 'nMitosisBreaks'])
+        if write_sumStats:
+            print("Writing summary statistics to files")
+            # summary statistics for the whole system
+            with open('../output/sumstats/sumStats_total.tsv', 'w', newline='') as file:
+                writer = csv.writer(file, delimiter = '\t')
+                writer.writerow(["nDSB", "nDel", "nInv", "nIns", "nDup", 'cycleID', 'nBiasedChroms', 'nMitosisBreaks'])
 
-        # summary statistics for each chromosome
-        with open('../output/sumstats/sumStats_chrom.tsv', 'w', newline='') as file:
-            writer = csv.writer(file, delimiter = '\t')
-            writer.writerow(["chr", "nDSB", "nOsc", "nDel", "nIns", "nInv", "nDup"])
+            # summary statistics for each chromosome
+            with open('../output/sumstats/sumStats_chrom.tsv', 'w', newline='') as file:
+                writer = csv.writer(file, delimiter = '\t')
+                writer.writerow(["chr", "nDSB", "nOsc", "nDel", "nIns", "nInv", "nDup"])
 
+        if write_shatterseek:
+            # for use of shatterseek chromothripsis determination
+            with open('../output/ShatterSeek/R/SVData.tsv', 'w', newline='') as file:
+                writer = csv.writer(file, delimiter = '\t')
+                writer.writerow(["chrom1", "start1", "strand1", "chrom2", "end2", "strand2", "svclass"])
 
-        # for use of shatterseek chromothripsis determination
-        with open('../output/ShatterSeek/R/SVData.tsv', 'w', newline='') as file:
-            writer = csv.writer(file, delimiter = '\t')
-            writer.writerow(["chrom1", "start1", "strand1", "chrom2", "end2", "strand2", "svclass"])
-
-        with open('../output/ShatterSeek/R/CNData.tsv', 'w', newline='') as file:
-            writer = csv.writer(file, delimiter = '\t')
-            writer.writerow(["chromosome", "start", "end", "total_cn"])
+            with open('../output/ShatterSeek/R/CNData.tsv', 'w', newline='') as file:
+                writer = csv.writer(file, delimiter = '\t')
+                writer.writerow(["chromosome", "start", "end", "total_cn"])
 
 
     # analyse data for SVs
-    nIns  = calcSVs.insertions(nodes,cycleID)
-    nInv  = calcSVs.inversions(nodes,cycleID,chromLengths)
-    cn_df, num = calcSVs.duplications(nodes,cycleID,nChroms,chromLengths,cn_df,num,size)
+    nIns  = calcSVs.insertions(nodes,cycleID, write_cicos = write_cicos, write_shatterseek = write_shatterseek)
+    nInv  = calcSVs.inversions(nodes,cycleID,chromLengths, write_cicos = write_cicos, write_shatterseek = write_shatterseek)
+    cn_df, num = calcSVs.duplications(nodes,cycleID,nChroms,chromLengths,cn_df,num,size, write_cicos = write_cicos, write_shatterseek = write_shatterseek)
 
 
     # generate summary statistics in final cell cycle
-    if cycleID == nCycles-1:
-        sumStats(nodes, nChroms, nIns, nInv, cn_df, num, size, cycleID, DSBmat, nBiasedChroms, nMitosisBreaks)
+    sumStats_total = pd.DataFrame(columns=["nDSB", "nDel", "nInv", "nIns", "nDup", 'cycleID', 'nBiasedChroms', 'nMitosisBreaks'])
+    sumStats_chrom = pd.DataFrame(columns=["chr", "nDSB", "nOsc", "nDel", "nIns", "nInv", "nDup"])
 
-    return
+    if cycleID == nCycles-1:
+        sumStats_chrom, sumStats_total = sumStats(nodes, nChroms, nIns, nInv, cn_df, num, size, cycleID, DSBmat, nBiasedChroms, nMitosisBreaks, write_cicos, write_shatterseek, write_sumStats)
+
+    return sumStats_chrom, sumStats_total
 
 ################################################################################
 # generate SV:
-def main():
+def main(matType = 'biased', lmbda = 5, minDSB = 0, maxDSB = 40, nCycles = 2, write_cicos = False, write_shatterseek = False, write_sumStats = False, verbose = 0):
 
     # variables
     nChroms  = 22
@@ -1678,14 +1730,16 @@ def main():
     nMitosisBreaks = 0
 
     # define matrix preferencing chromosomes
-    #matType = 'random'
-    matType = 'biased'
-    #matType = 'fixed'
+    # commented out by lbx
+    # #matType = 'random'
+    # matType = 'biased'
+    # #matType = 'fixed'
     chromMat, nBiasedChroms = matPref(matType, nChroms)
 
     # parameters
-    lmbda   = 5    # max number of unrepaired segments a cell can handle
-    nCycles = 2    # number of cell cycles
+    # commented out by lbx
+    # lmbda   = 5    # max number of unrepaired segments a cell can handle
+    # nCycles = 2    # number of cell cycles
 
     # determine segment size of cn_df
     size = int(50E5)
@@ -1695,19 +1749,22 @@ def main():
     count   = 0
 
     for i in range(nCycles):
-        print("\n############################ ")
+        if verbose > 0:
+            print("\n############################ ")
 
         # for selecting specific DSB ranges/values by cell cycle number
-        if cycleID == 0:
-            minDSB  = 0
-            maxDSB  = 40
-        else:
-            minDSB  = 0
-            maxDSB  = 40
+        # commented out by lbx
+        # if cycleID == 0:
+        #     minDSB  = 0
+        #     maxDSB  = 40
+        # else:
+        #     minDSB  = 0
+        #     maxDSB  = 40
 
         # generate breakpoints
         nDSB = generateDSBs(minDSB, maxDSB)
-        print("Cycle: %d; Number of DSBs: %d" %(cycleID, nDSB))
+        if verbose > 0:
+            print("Cycle: %d; Number of DSBs: %d" %(cycleID, nDSB))
 
 
         if nDSB > 0:
@@ -1723,7 +1780,8 @@ def main():
 
         # initialises nodes dictionary
         nodes, DSBmat = generateNodes(nodes, nDSB, nChroms, chromLengths, firstEvent, chromMat, DSBmat)
-        print("Total number of junctions in nucleus: %d\n" %len(nodes))
+        if verbose > 0:
+            print("Total number of junctions in nucleus: %d\n" %len(nodes))
 
 
         # define path ends
@@ -1731,7 +1789,7 @@ def main():
 
 
         # growth phase
-        nodes = g1(nodes, lmbda)
+        nodes = g1(nodes, lmbda, verbose)
 
 
         # assign centromeres to segments
@@ -1739,12 +1797,12 @@ def main():
 
 
         # path construction
-        pathList = connectedPathConstruction(nodes, pathList)
-        telomeric, nonTelomeric = unconnectedPathConstruction(nodes)
+        pathList = connectedPathConstruction(nodes, pathList, verbose)
+        telomeric, nonTelomeric = unconnectedPathConstruction(nodes, verbose)
 
 
         # synthesis & second growth phase
-        nodes, pathList = syn_g2(nodes, pathList, telomeric, nonTelomeric)
+        nodes, pathList = syn_g2(nodes, pathList, telomeric, nonTelomeric, verbose)
 
 
         # path directionality
@@ -1752,7 +1810,7 @@ def main():
 
 
         # mitosis phase
-        nodes, DSBmat, nMitosisBreaks = mitosis(nodes, pathList, cycleID, nCycles, centromerePos, DSBmat, nMitosisBreaks)
+        nodes, DSBmat, nMitosisBreaks = mitosis(nodes, pathList, cycleID, nCycles, centromerePos, DSBmat, nMitosisBreaks, verbose)
 
 
         # initialise cn information
@@ -1760,7 +1818,7 @@ def main():
 
 
         # open output file for writing SV data
-        analysis(nodes, nCycles, cycleID, lmbda, chromLengths, DSBmat, cn_df, num, size, nChroms, nBiasedChroms, nMitosisBreaks)
+        sumStats_chrom, sumStats_total = analysis(nodes, nCycles, cycleID, lmbda, chromLengths, DSBmat, cn_df, num, size, nChroms, nBiasedChroms, nMitosisBreaks, write_cicos, write_shatterseek, write_sumStats)
 
 
         # end of cycle cleaning:
@@ -1770,8 +1828,9 @@ def main():
         pathList.clear()
     nodes.clear()
 
-    print("\n~~ End of Simulation ~~\n")
-    return
+    if verbose > 0:
+        print("\n~~ End of Simulation ~~\n")
+    return sumStats_chrom, sumStats_total
 
 
 if __name__ == '__main__':

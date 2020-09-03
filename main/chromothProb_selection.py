@@ -16,17 +16,17 @@ import sys
 
 
 # load data
-r_prob_neut_TSV = '../output/sumstats/prob_trends/selection/prob_neutral.tsv'
+r_prob_neut_TSV = '../output/sumstats/prob_trends/selection/prob_random.tsv'
 probN = pd.read_csv(r_prob_neut_TSV, sep="\t")
 
 r_prob_bias_TSV = '../output/sumstats/prob_trends/selection/prob_biased.tsv'
 probB = pd.read_csv(r_prob_bias_TSV, sep="\t")
 
-r_prob_forced_TSV = '../output/sumstats/prob_trends/selection/prob_forced.tsv'
+r_prob_forced_TSV = '../output/sumstats/prob_trends/selection/prob_fixed.tsv'
 probF = pd.read_csv(r_prob_forced_TSV, sep="\t")
 
 # create dataframe
-prob_df = pd.DataFrame(list(zip(probN, probB, probF)), columns=['Neutral', 'Biased', 'Forced'])
+prob_df = pd.DataFrame(list(zip(probN, probB, probF)), columns=['Random', 'Biased', 'Fixed'])
 
 # plot figure
 sns_plot = sns.barplot(data=prob_df)
