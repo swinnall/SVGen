@@ -1387,7 +1387,7 @@ def cmplxSegregation(nodes, pathList, i, nCent, centList, centromerePos, DSBmat,
                     if verbose > 0:
                         print("Next connection (M): %s" %nodeID)
 
-                # if no maxDSBtant connection, reached other junction
+                # if no muant connection, reached other junction
                 else:
                     subPathCondition = False
 
